@@ -1,0 +1,71 @@
+# Arquivos e pastas desnecessários
+
+# Arquivo de ajuda gerado automaticamente
+HELP.md
+
+# Diretórios de build (Gradle)
+.gradle/
+build/
+*/build/
+*/bin/
+*/out/
+
+# Mantém apenas o wrapper necessário do Gradle
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDEs
+
+## Spring Tool Suite (STS)
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+## IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+## NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+## Visual Studio Code
+.vscode/
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.rej
+*.orig
+
+# Arquivos de banco de dados ou de configuração local
+*.h2.db
+*.env
+*.local
+
+# Arquivos de cobertura ou testes gerados
+/test-results/
+*.exec
+jacoco.exec
+*.coverage
+*.lcov
+
+# Exclusões reversas se você quiser manter bin/out/build dentro de src (opcional)
+!**/src/main/**/build/
+!**/src/test/**/build/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+!**/src/main/**/out/
+!**/src/test/**/out/

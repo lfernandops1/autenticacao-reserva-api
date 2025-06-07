@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,6 +26,7 @@ import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
 import com.autenticacao.api.app.repository.UsuarioRepository;
+import com.autenticacao.api.exception.SenhaExpiradaException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +38,8 @@ public class AutenticacaoServiceImpl implements UserDetailsService {
   private final AutenticacaoRepository autenticacaoRepository;
   private final TokenService tokenService;
   private final PasswordEncoder passwordEncoder;
+  private final RefreshTokenServiceImpl refreshTokenService;
+  private final TentativaLoginServiceImpl tentativaLoginService;
 
   @Override
   public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -46,11 +50,48 @@ public class AutenticacaoServiceImpl implements UserDetailsService {
 
   public LoginResponseDTO login(
       LoginUsuarioRequestDTO data, AuthenticationManager authenticationManager) {
+    Usuario usuario = buscarUsuarioPorEmail(data.email());
+
+    tentativaLoginService.validarBloqueio(usuario);
+
+    try {
+      Usuario usuarioAutenticado = autenticarUsuario(data, authenticationManager);
+
+      tentativaLoginService.resetarTentativas(usuario);
+
+      validarSenhaExpirada(usuarioAutenticado);
+
+      return criarLoginResponse(usuarioAutenticado);
+
+    } catch (BadCredentialsException ex) {
+      tentativaLoginService.registrarFalha(usuario);
+      throw ex;
+    }
+  }
+
+  private Usuario buscarUsuarioPorEmail(String email) {
+    return usuarioRepository
+        .findByEmail(email)
+        .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+  }
+
+  private Usuario autenticarUsuario(
+      LoginUsuarioRequestDTO data, AuthenticationManager authenticationManager) {
     var authToken = new UsernamePasswordAuthenticationToken(data.email(), data.senha());
     var authentication = authenticationManager.authenticate(authToken);
-    var usuarioAutenticado = (Usuario) authentication.getPrincipal();
-    var token = tokenService.generateToken(usuarioAutenticado);
-    return new LoginResponseDTO(token);
+    return (Usuario) authentication.getPrincipal();
+  }
+
+  private void validarSenhaExpirada(Usuario usuario) {
+    if (senhaExpirada(usuario.getAutenticacao())) {
+      throw new SenhaExpiradaException("Sua senha expirou, por favor altere.");
+    }
+  }
+
+  private LoginResponseDTO criarLoginResponse(Usuario usuario) {
+    String accessToken = tokenService.generateToken(usuario);
+    String refreshToken = refreshTokenService.createRefreshToken(usuario);
+    return new LoginResponseDTO(accessToken, refreshToken);
   }
 
   public void criarAutenticacao(CadastroUsuarioRequest requestDTO, Usuario usuario) {
@@ -83,6 +124,10 @@ public class AutenticacaoServiceImpl implements UserDetailsService {
     autenticacao.setAtivo(false);
     autenticacao.setDataHoraExclusao(LocalDateTime.now());
     autenticacaoRepository.save(autenticacao);
+  }
+
+  public boolean senhaExpirada(Autenticacao autenticacao) {
+    return autenticacao.getDataHoraAtualizacao().plusDays(90).isBefore(LocalDateTime.now());
   }
 
   private Autenticacao obterAutenticacao(

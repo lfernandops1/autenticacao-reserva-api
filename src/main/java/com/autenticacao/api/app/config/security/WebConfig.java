@@ -2,6 +2,7 @@ package com.autenticacao.api.app.config.security;
 
 import static com.autenticacao.api.app.Constantes.Util.ASTERISTICO;
 import static com.autenticacao.api.app.Constantes.Util.BARRA_ALL;
+import static com.autenticacao.api.app.Constantes.Web.*;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -14,6 +15,26 @@ public class WebConfig implements WebMvcConfigurer {
   public void addCorsMappings(CorsRegistry registry) {
     registry
         .addMapping(BARRA_ALL)
+        .allowedOrigins(ENDERECO + PORTA_4200)
+        .allowedMethods(GET, POST, PUT, DELETE, PATCH, OPTIONS)
+        .allowedHeaders(ASTERISTICO)
+        .allowCredentials(true);
+    registry
+        .addMapping("/v3/api-docs/**")
+        .allowedOrigins(ENDERECO + PORTA_4200)
+        .allowedMethods(GET, POST, PUT, DELETE, PATCH, OPTIONS)
+        .allowedHeaders(ASTERISTICO)
+        .allowCredentials(true);
+
+    registry
+        .addMapping("/swagger-ui/**")
+        .allowedOrigins(ENDERECO + PORTA_4200)
+        .allowedMethods(GET, POST, PUT, DELETE, PATCH, OPTIONS)
+        .allowedHeaders(ASTERISTICO)
+        .allowCredentials(true);
+
+    registry
+        .addMapping("/swagger-ui.html")
         .allowedOrigins(ENDERECO + PORTA_4200)
         .allowedMethods(GET, POST, PUT, DELETE, PATCH, OPTIONS)
         .allowedHeaders(ASTERISTICO)

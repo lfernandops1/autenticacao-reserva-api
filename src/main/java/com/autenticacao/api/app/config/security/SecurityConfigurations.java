@@ -1,5 +1,7 @@
 package com.autenticacao.api.app.config.security;
 
+import static com.autenticacao.api.app.Constantes.ROTAS.*;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,8 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
-
-import static com.autenticacao.api.app.Constantes.ROTAS.*;
 
 @Configuration
 @EnableWebSecurity
@@ -34,12 +34,24 @@ public class SecurityConfigurations {
         .authorizeHttpRequests(
             authorize ->
                 authorize
+                    // liberar swagger
+                    .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/swagger-resources/**",
+                        "/webjars/**")
+                    .permitAll()
+
+                    // liberar autenticação e cadastro
                     .requestMatchers(HttpMethod.POST, API_AUTENTICAR + LOGIN)
                     .permitAll()
                     .requestMatchers(API_USUARIOS + CRIAR)
                     .permitAll()
+
+                    // qualquer outra requisição requer autenticação
                     .anyRequest()
-                    .permitAll())
+                    .authenticated())
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }

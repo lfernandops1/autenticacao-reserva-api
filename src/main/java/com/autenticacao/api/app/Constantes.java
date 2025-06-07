@@ -62,7 +62,7 @@ public interface Constantes {
 
   interface TABELAS {
     String TABELA_USUARIOS = "usuarios";
-
+    String TABELA_REFRESH_TOKEN = "refresh_token";
     String TABELA_AUTENTICACOES = "autenticacoes";
   }
 

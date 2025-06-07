@@ -2,9 +2,16 @@ package com.autenticacao.api.exception;
 
 import com.autenticacao.api.util.enums.EValidacao;
 
-public class ValidacaoNotFoundException extends ExceptionNotFoundAbstract {
+public class ValidacaoNotFoundException extends RuntimeException {
 
-  public ValidacaoNotFoundException(EValidacao validacao, String... params) {
-    super(validacao, params);
+  private final EValidacao mensagemEnum;
+
+  public ValidacaoNotFoundException(EValidacao mensagemEnum, String... params) {
+    super(mensagemEnum.getMessageKey());
+    this.mensagemEnum = mensagemEnum;
+  }
+
+  public EValidacao getMensagemEnum() {
+    return mensagemEnum;
   }
 }

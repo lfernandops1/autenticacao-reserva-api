@@ -9,14 +9,20 @@ public record AtualizarUsuarioRequest(
     String telefone,
     String email,
     LocalDate dataNascimento,
-    LocalDateTime dataHoraAtualizacao) {
+    LocalDateTime dataHoraAtualizacao,
+    LocalDateTime senhaAtualizadaEm) {
 
   public AtualizarUsuarioRequest {
 
     dataHoraAtualizacao = dataHoraAtualizacao != null ? dataHoraAtualizacao : LocalDateTime.now();
+    senhaAtualizadaEm = senhaAtualizadaEm != null ? senhaAtualizadaEm : LocalDateTime.now();
   }
 
   public LocalDateTime dataHoraAtualizacao() {
+    return LocalDateTime.now();
+  }
+
+  public LocalDateTime senhaAtualizadaEm() {
     return LocalDateTime.now();
   }
 }

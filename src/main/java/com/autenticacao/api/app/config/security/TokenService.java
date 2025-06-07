@@ -3,7 +3,6 @@ package com.autenticacao.api.app.config.security;
 import static com.autenticacao.api.app.Constantes.Mensagens.ERRO_ENQUANTO_GERAVA_TOKEN_DE_ACESSO;
 import static com.autenticacao.api.app.Constantes.PERMISSOES.SEGREDO;
 import static com.autenticacao.api.app.Constantes.Util.GMT;
-import static com.autenticacao.api.app.Constantes.Util.STRING_VAZIA;
 import static org.apache.naming.ResourceRef.AUTH;
 
 import java.time.Instant;
@@ -42,7 +41,7 @@ public class TokenService {
 
       return JWT.require(algorithm).withIssuer(AUTH).build().verify(token).getSubject();
     } catch (JWTVerificationException exception) {
-      return STRING_VAZIA;
+      return null;
     }
   }
 

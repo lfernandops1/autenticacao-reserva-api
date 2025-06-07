@@ -1,44 +1,46 @@
 package com.autenticacao.api.util;
 
-import static com.autenticacao.api.app.Constantes.Mensagens.EMAIL_INVALIDO;
-import static com.autenticacao.api.app.Constantes.Mensagens.TELEFONE_INVALIDO;
+import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
+import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
+import org.springframework.stereotype.Component;
 
 import java.util.regex.Pattern;
 
-import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
-import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
+import static com.autenticacao.api.app.Constantes.Mensagens.EMAIL_INVALIDO;
+import static com.autenticacao.api.app.Constantes.Mensagens.TELEFONE_INVALIDO;
 
+@Component
 public class ValidatorUsuarioUtil {
 
-  private static final Pattern TELEFONE_PATTERN = Pattern.compile("^\\d{2}9\\d{8}$");
+    private static final Pattern TELEFONE_PATTERN = Pattern.compile("^\\d{2}9\\d{8}$");
 
-  private static final Pattern EMAIL_PATTERN =
-      Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}(\\.[A-Za-z]{2,})?$");
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}(\\.[A-Za-z]{2,})?$");
 
-  public static void validarFormatoEmailETelefone(CadastroUsuarioRequest request) {
-    validarEmail(request.email());
-    validarTelefone(request.telefone());
-  }
-
-  public static void validarFormatoEmailETelefone(AtualizarUsuarioRequest request) {
-    if (request.email() != null) {
-      validarEmail(request.email());
+    public void validarFormatoEmailETelefone(CadastroUsuarioRequest request) {
+        validarEmail(request.email());
+        validarTelefone(request.telefone());
     }
 
-    if (request.telefone() != null) {
-      validarTelefone(request.telefone());
-    }
-  }
+    public void validarFormatoEmailETelefone(AtualizarUsuarioRequest request) {
+        if (request.email() != null) {
+            validarEmail(request.email());
+        }
 
-  private static void validarEmail(String email) {
-    if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
-      throw new IllegalArgumentException(EMAIL_INVALIDO + ": " + email);
+        if (request.telefone() != null) {
+            validarTelefone(request.telefone());
+        }
     }
-  }
 
-  private static void validarTelefone(String telefone) {
-    if (telefone == null || !TELEFONE_PATTERN.matcher(telefone).matches()) {
-      throw new IllegalArgumentException(TELEFONE_INVALIDO + ": " + telefone);
+    private void validarEmail(String email) {
+        if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException(EMAIL_INVALIDO + ": " + email);
+        }
     }
-  }
+
+    private void validarTelefone(String telefone) {
+        if (telefone == null || !TELEFONE_PATTERN.matcher(telefone).matches()) {
+            throw new IllegalArgumentException(TELEFONE_INVALIDO + ": " + telefone);
+        }
+    }
 }

@@ -71,6 +71,9 @@ public class Usuario implements UserDetails {
   @Column(name = DATA_NASCIMENTO)
   private LocalDate dataNascimento;
 
+  private int tentativasFalhas;
+  private LocalDateTime bloqueadoAte;
+
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     return List.of();

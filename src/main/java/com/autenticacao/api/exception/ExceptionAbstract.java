@@ -31,9 +31,4 @@ public abstract class ExceptionAbstract extends RuntimeException {
     this.validacao = validacao;
     this.params = params;
   }
-
-  public ExceptionAbstract(EValidacao validacao, Throwable cause) {
-    super(validacao.getMessageKey(), cause);
-    this.validacao = validacao;
-  }
 }

@@ -1,4 +1,4 @@
-package com.autenticacao.api.app.domain;
+package com.autenticacao.api.app.domain.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

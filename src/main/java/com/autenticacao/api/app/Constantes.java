@@ -33,6 +33,8 @@ public interface Constantes {
     String ERRO_AO_ATUALIZAR_DADOS_USUARIO = "Ocorreu um erro ao atualizr usuário";
 
     String EMAIL_OU_SENHA_INVALIDO = "Email ou senha invalidos";
+    String ERRO_AO_DESATIVAR_USUARIO = "Erro ao desativar usuário";
+    String ERRO_AO_BUSCAR_USUARIO = "Erro ao buscar o usuário";
 
     String ERRO_AO_ACESSAR_CAMPO = "Erro ao acessar campo: ";
     String ERRO_AO_TENTAR_CRIAR_USUARIO = "Erro ao tentar criar usuario";
@@ -64,10 +66,18 @@ public interface Constantes {
     String TABELA_USUARIOS = "usuarios";
     String TABELA_REFRESH_TOKEN = "refresh_token";
     String TABELA_AUTENTICACOES = "autenticacoes";
+    String TABELA_HISTORICO_USUARIO = "historico_usuarios";
   }
 
   interface SCHEMA {
     String SCHEMA_AUTENTICACAO = "autenticacao";
+  }
+
+  interface TABELA_HISTORICO_USUARIO {
+
+    String TIPO_MOVIMENTACAO = "tipo_alteracao";
+    String USUARIO_RESPONSAVEL = "usuario_responsavel";
+    String CAMPOS_ALTERADOS = "campos_alterados";
   }
 
   interface TABELA_AUTENTICACAO {
@@ -88,10 +98,6 @@ public interface Constantes {
     String EMAIL = "email";
     String TELEFONE = "telefone";
     String ATIVO = "ativo";
-    String AUTENTICACAO = "autenticacao";
-    String FOLHAS = "folhas";
-    String GASTOS = "gastos";
-    String USER_ROLE = "user_role";
     String DATA_HORA_CRIACAO = "data_hora_criacao";
     String DATA_HORA_ATUALIZACAO = "data_hora_atualizacao";
     String DATA_NASCIMENTO = "data_nascimento";
@@ -99,12 +105,14 @@ public interface Constantes {
 
   interface ROTAS {
     String LOGIN = "/login";
+    String REFRESH_TOKEN = "/refresh-token";
     String LOGOUT = "/logout";
     String API_AUTENTICAR = "/api/autenticacao";
     String ALTERAR_SENHA = "/alterar-senha";
 
     String LISTAR_TODOS = "/listar-todos";
     String CRIAR = "/criar";
+    String CRIAR_ADMIN = "/criar-admin";
     String USUARIO = "/usuario";
     String FILTRAR_USUARIO = "/usuario/filtrar";
     String ID = "/{id}";

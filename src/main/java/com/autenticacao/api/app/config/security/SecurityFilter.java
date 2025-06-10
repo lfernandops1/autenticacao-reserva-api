@@ -26,9 +26,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
 
-  TokenService tokenService;
+  private final TokenService tokenService;
 
-  UsuarioRepository usuarioRepository;
+  private final UsuarioRepository usuarioRepository;
 
   @Override
   protected void doFilterInternal(

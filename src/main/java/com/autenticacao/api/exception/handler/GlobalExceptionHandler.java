@@ -29,7 +29,6 @@ public class GlobalExceptionHandler {
   }
 
   private String getMensagem(EValidacao codigoEnum, Locale locale) {
-    // Busca a mensagem no properties usando a key igual ao nome do enum
     return messageSource.getMessage(
         "enum.EValidacao." + codigoEnum.name(), null, codigoEnum.name(), locale);
   }

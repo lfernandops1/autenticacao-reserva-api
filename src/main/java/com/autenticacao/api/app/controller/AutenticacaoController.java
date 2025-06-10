@@ -4,6 +4,7 @@ import static com.autenticacao.api.app.Constantes.ROTAS.*;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +39,7 @@ public class AutenticacaoController {
     return ResponseEntity.ok(loginResponse);
   }
 
-  @PostMapping("/refresh-token")
+  @PostMapping(REFRESH_TOKEN)
   public ResponseEntity<LoginResponseDTO> refreshToken(
       @RequestBody @Valid RefreshTokenRequestDTO request) {
     String refreshToken = request.refreshToken();
@@ -53,6 +54,7 @@ public class AutenticacaoController {
     return ResponseEntity.ok(new LoginResponseDTO(newAccessToken, refreshToken));
   }
 
+  @PreAuthorize("hasRole('ADMIN') or #id == principal.id")
   @PutMapping(ALTERAR_SENHA)
   public ResponseEntity<Void> alterarSenha(
       @RequestBody @Valid AlterarSenhaRequestDTO alterarSenhaRequest) {

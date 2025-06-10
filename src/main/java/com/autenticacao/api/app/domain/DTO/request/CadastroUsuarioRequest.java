@@ -27,28 +27,38 @@ public record CadastroUsuarioRequest(
     LocalDateTime senhaAtualizadaEm) {
 
   public CadastroUsuarioRequest {
-
     ativo = ativo != null ? ativo : true;
-
-    role = role != null ? role : UserRole.USER;
-
     dataHoraCriacao = dataHoraCriacao != null ? dataHoraCriacao : LocalDateTime.now();
     senhaAtualizadaEm = senhaAtualizadaEm != null ? senhaAtualizadaEm : LocalDateTime.now();
   }
 
   public Boolean ativo() {
-    return true;
+    return ativo;
   }
 
   public UserRole role() {
-    return UserRole.USER;
+    return role;
   }
 
   public LocalDateTime dataHoraCriacao() {
-    return LocalDateTime.now();
+    return dataHoraCriacao;
   }
 
   public LocalDateTime senhaAtualizadaEm() {
-    return LocalDateTime.now();
+    return senhaAtualizadaEm;
+  }
+
+  public CadastroUsuarioRequest withRole(UserRole novaRole) {
+    return new CadastroUsuarioRequest(
+        nome,
+        sobrenome,
+        email,
+        senha,
+        telefone,
+        dataNascimento,
+        ativo,
+        novaRole,
+        dataHoraCriacao,
+        senhaAtualizadaEm);
   }
 }

@@ -18,9 +18,4 @@ public class AutenticacaoApiRunTimeException extends RuntimeException {
     super(mensagemFormatada);
     this.descricao = mensagemFormatada;
   }
-
-  public AutenticacaoApiRunTimeException(String msg, Throwable causa) {
-    super(msg, causa);
-    this.descricao = msg;
-  }
 }

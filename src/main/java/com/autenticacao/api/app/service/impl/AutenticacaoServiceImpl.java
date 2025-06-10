@@ -26,13 +26,14 @@ import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
 import com.autenticacao.api.app.repository.UsuarioRepository;
+import com.autenticacao.api.app.service.AutenticacaoService;
 import com.autenticacao.api.exception.SenhaExpiradaException;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class AutenticacaoServiceImpl implements UserDetailsService {
+public class AutenticacaoServiceImpl implements UserDetailsService, AutenticacaoService {
 
   private final UsuarioRepository usuarioRepository;
   private final AutenticacaoRepository autenticacaoRepository;
@@ -102,6 +103,7 @@ public class AutenticacaoServiceImpl implements UserDetailsService {
     autenticacaoRepository.save(autenticacao);
   }
 
+  @Override
   public void alterarSenha(AlterarSenhaRequestDTO requestDTO) {
     Usuario usuario =
         usuarioRepository
@@ -113,6 +115,7 @@ public class AutenticacaoServiceImpl implements UserDetailsService {
     autenticacaoRepository.save(autenticacao);
   }
 
+  @Override
   public void desativarAutenticacao(UUID usuarioId) {
     Autenticacao autenticacao =
         autenticacaoRepository

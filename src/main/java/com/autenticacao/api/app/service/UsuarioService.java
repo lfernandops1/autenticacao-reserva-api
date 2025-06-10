@@ -10,7 +10,7 @@ import com.autenticacao.api.app.domain.DTO.response.UsuarioResumoResponse;
 
 public interface UsuarioService {
 
-  UsuarioResumoResponse prepararParaCriarUsuario(CadastroUsuarioRequest request);
+  UsuarioResumoResponse criarUsuario(CadastroUsuarioRequest request);
 
   UsuarioDetalhadoResponse atualizarUsuario(UUID id, AtualizarUsuarioRequest request);
 

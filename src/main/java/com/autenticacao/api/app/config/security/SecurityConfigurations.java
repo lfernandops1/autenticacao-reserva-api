@@ -34,7 +34,6 @@ public class SecurityConfigurations {
         .authorizeHttpRequests(
             authorize ->
                 authorize
-                    // liberar swagger
                     .requestMatchers(
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
@@ -42,14 +41,10 @@ public class SecurityConfigurations {
                         "/swagger-resources/**",
                         "/webjars/**")
                     .permitAll()
-
-                    // liberar autenticação e cadastro
                     .requestMatchers(HttpMethod.POST, API_AUTENTICAR + LOGIN)
                     .permitAll()
                     .requestMatchers(API_USUARIOS + CRIAR)
                     .permitAll()
-
-                    // qualquer outra requisição requer autenticação
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

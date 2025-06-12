@@ -1,8 +1,8 @@
 package com.autenticacao.api.app.config.security;
 
-import static com.autenticacao.api.app.Constantes.PERMISSOES.AUTHORIZATION;
-import static com.autenticacao.api.app.Constantes.PERMISSOES.BEARER;
+import static com.autenticacao.api.app.Constantes.Http.HEADER_BEARER_PREFIX;
 import static com.autenticacao.api.app.Constantes.Util.STRING_VAZIA;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -26,9 +26,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
 
-  TokenService tokenService;
+  private final TokenService tokenService;
 
-  UsuarioRepository usuarioRepository;
+  private final UsuarioRepository usuarioRepository;
 
   @Override
   protected void doFilterInternal(
@@ -40,12 +40,14 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     if (token != null) {
       var email = tokenService.validateToken(token);
-      Optional<Usuario> usuarioOptional = usuarioRepository.findByEmail(email);
-      if (usuarioOptional.isPresent()) {
-        Usuario usuario = usuarioOptional.get();
-        var authentication =
-            new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+      if (email != null && !email.isBlank()) {
+        Optional<Usuario> usuarioOptional = usuarioRepository.findByEmail(email);
+        if (usuarioOptional.isPresent()) {
+          Usuario usuario = usuarioOptional.get();
+          var authentication =
+              new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+          SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
       }
     }
 
@@ -55,6 +57,6 @@ public class SecurityFilter extends OncePerRequestFilter {
   private String recoverToken(HttpServletRequest request) {
     var authHeader = request.getHeader(AUTHORIZATION);
     if (authHeader == null) return null;
-    return authHeader.replace(BEARER, STRING_VAZIA);
+    return authHeader.replace(HEADER_BEARER_PREFIX, STRING_VAZIA);
   }
 }

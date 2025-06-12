@@ -1,15 +1,16 @@
 package com.autenticacao.api.app.service.impl;
 
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.ContaBloqueadaException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.TentativaLoginService;
-import com.autenticacao.api.app.exception.ContaBloqueadaException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

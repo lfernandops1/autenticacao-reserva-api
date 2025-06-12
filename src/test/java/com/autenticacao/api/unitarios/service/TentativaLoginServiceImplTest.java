@@ -16,9 +16,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.ContaBloqueadaException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.impl.TentativaLoginServiceImpl;
-import com.autenticacao.api.app.exception.ContaBloqueadaException;
 
 @ExtendWith(MockitoExtension.class)
 class TentativaLoginServiceImplTest {

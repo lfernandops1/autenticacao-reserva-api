@@ -23,11 +23,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
 import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
-import com.autenticacao.api.app.repository.AutenticacaoRepository;
-import com.autenticacao.api.app.service.impl.AutenticacaoCadastroServiceImpl;
 import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
 import com.autenticacao.api.app.exception.AutenticacaoJaExistenteException;
 import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
+import com.autenticacao.api.app.repository.AutenticacaoRepository;
+import com.autenticacao.api.app.service.impl.AutenticacaoCadastroServiceImpl;
 import com.autenticacao.api.app.util.enums.UserRole;
 
 @ExtendWith(MockitoExtension.class)

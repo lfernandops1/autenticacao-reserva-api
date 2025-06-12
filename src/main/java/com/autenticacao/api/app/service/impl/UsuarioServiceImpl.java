@@ -2,6 +2,7 @@ package com.autenticacao.api.app.service.impl;
 
 import static com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider.obterUsuarioLogado;
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,12 +16,12 @@ import com.autenticacao.api.app.domain.DTO.response.UsuarioDetalhadoResponse;
 import com.autenticacao.api.app.domain.DTO.response.UsuarioResumoResponse;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.domain.mapper.UsuarioMapper;
+import com.autenticacao.api.app.exception.ValidacaoException;
+import com.autenticacao.api.app.exception.ValidacaoNotFoundException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 import com.autenticacao.api.app.service.HistoricoUsuarioService;
 import com.autenticacao.api.app.service.UsuarioService;
-import com.autenticacao.api.app.exception.ValidacaoException;
-import com.autenticacao.api.app.exception.ValidacaoNotFoundException;
 import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
 import com.autenticacao.api.app.util.enums.MensagemSistema;
 import com.autenticacao.api.app.util.enums.TipoMovimentacao;

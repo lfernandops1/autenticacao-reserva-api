@@ -1,6 +1,7 @@
 package com.autenticacao.api.app.service.impl;
 
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.time.LocalDateTime;
 
@@ -10,9 +11,9 @@ import org.springframework.stereotype.Service;
 
 import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.SenhaExpiradaException;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
 import com.autenticacao.api.app.service.SenhaService;
-import com.autenticacao.api.app.exception.SenhaExpiradaException;
 
 import lombok.RequiredArgsConstructor;
 

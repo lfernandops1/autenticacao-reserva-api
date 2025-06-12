@@ -1,5 +1,6 @@
 package com.autenticacao.api.unitarios.service;
 
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,9 +21,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.autenticacao.api.app.config.security.provider.TokenGenerator;
 import com.autenticacao.api.app.domain.entity.RefreshToken;
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.RefreshTokenInvalidoException;
 import com.autenticacao.api.app.repository.RefreshTokenRepository;
 import com.autenticacao.api.app.service.impl.RefreshTokenServiceImpl;
-import com.autenticacao.api.app.exception.RefreshTokenInvalidoException;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceImplTest {

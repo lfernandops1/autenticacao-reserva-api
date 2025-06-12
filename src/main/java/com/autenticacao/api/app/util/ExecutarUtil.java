@@ -14,9 +14,9 @@ public class ExecutarUtil {
     try {
       return comando.get();
     } catch (ValidacaoException
-             | ValidacaoNotFoundException
-             | RefreshTokenInvalidoException
-             | SenhaExpiradaException ex) {
+        | ValidacaoNotFoundException
+        | RefreshTokenInvalidoException
+        | SenhaExpiradaException ex) {
       throw ex; // relança diretamente, sem envolvimento
     } catch (Exception e) {
       log.error(e.getMessage(), e);

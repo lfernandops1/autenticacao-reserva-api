@@ -1,5 +1,6 @@
 package com.autenticacao.api.unitarios.service;
 
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -18,10 +19,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
-import com.autenticacao.api.app.repository.AutenticacaoRepository;
-import com.autenticacao.api.app.service.impl.SenhaServiceImpl;
 import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
 import com.autenticacao.api.app.exception.SenhaExpiradaException;
+import com.autenticacao.api.app.repository.AutenticacaoRepository;
+import com.autenticacao.api.app.service.impl.SenhaServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class SenhaServiceImplTest {

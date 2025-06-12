@@ -1,6 +1,7 @@
 package com.autenticacao.api.app.service.impl;
 
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.time.LocalDateTime;
 
@@ -10,9 +11,9 @@ import org.springframework.stereotype.Service;
 import com.autenticacao.api.app.config.security.provider.TokenGenerator;
 import com.autenticacao.api.app.domain.entity.RefreshToken;
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.RefreshTokenInvalidoException;
 import com.autenticacao.api.app.repository.RefreshTokenRepository;
 import com.autenticacao.api.app.service.RefreshTokenService;
-import com.autenticacao.api.app.exception.RefreshTokenInvalidoException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

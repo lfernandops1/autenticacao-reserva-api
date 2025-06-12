@@ -1,6 +1,7 @@
 package com.autenticacao.api.app.service.impl;
 
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.util.UUID;
 
@@ -18,11 +19,11 @@ import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.UsuarioNaoAutenticadoException;
+import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.AutenticacaoService;
 import com.autenticacao.api.app.service.SenhaService;
-import com.autenticacao.api.app.exception.UsuarioNaoAutenticadoException;
-import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 
 import lombok.RequiredArgsConstructor;
 

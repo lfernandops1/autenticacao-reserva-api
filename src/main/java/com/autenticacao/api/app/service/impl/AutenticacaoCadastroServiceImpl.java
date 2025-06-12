@@ -7,7 +7,6 @@ import static com.autenticacao.api.app.util.enums.MensagemSistema.USUARIO_JA_POS
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.autenticacao.api.app.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
 import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.*;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
 import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 

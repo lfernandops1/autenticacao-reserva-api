@@ -1,5 +1,6 @@
 package com.autenticacao.api.unitarios.service;
 
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,14 +27,14 @@ import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
 import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
+import com.autenticacao.api.app.exception.UsuarioNaoAutenticadoException;
+import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.SenhaService;
 import com.autenticacao.api.app.service.impl.AutenticacaoServiceImpl;
 import com.autenticacao.api.app.service.impl.RefreshTokenServiceImpl;
 import com.autenticacao.api.app.service.impl.TentativaLoginServiceImpl;
-import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
-import com.autenticacao.api.app.exception.UsuarioNaoAutenticadoException;
-import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class AutenticacaoServiceImplTest {

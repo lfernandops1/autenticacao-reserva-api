@@ -1,5 +1,6 @@
 package com.autenticacao.api.app.exception.handler;
 
+import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 import static java.lang.String.format;
 
 import java.util.ArrayList;

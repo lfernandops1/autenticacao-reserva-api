@@ -1,0 +1,52 @@
+### Cabeçalhos comuns
+@baseUrl = http://localhost:8095
+@token = <seu_token_aqui>
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Criar usuário comum
+POST {{baseUrl}}/usuarios
+Content-Type: application/json
+
+{
+  "nome": "João",
+  "sobrenome": "Silva",
+  "email": "joao@email.com",
+  "telefone": "11999999999",
+  "senha": "SenhaForte@123",
+  "dataNascimento": "1990-01-01"
+}
+
+###
+
+### Criar usuário administrador
+POST {{baseUrl}}/usuarios/criar-admin
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nome": "Admin",
+  "sobrenome": "Master",
+  "email": "admin@email.com",
+  "telefone": "11988888888",
+  "senha": "AdminForte@123",
+  "dataNascimento": "1980-05-10"
+}
+
+###
+
+### Desativar usuário
+PUT {{baseUrl}}/usuarios/{{id}}/desativar
+Authorization: Bearer {{token}}
+
+###
+
+### Buscar usuário por ID
+GET {{baseUrl}}/usuarios/{{id}}
+Authorization: Bearer {{token}}
+
+###
+
+### Listar todos os usuários
+GET {{baseUrl}}/usuarios
+Authorization: Bearer {{token}}

@@ -1,0 +1,36 @@
+### Cabeçalhos comuns
+@baseUrl = http://localhost:8080
+@token = <seu_token_aqui>
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Login do usuário
+POST {{baseUrl}}/autenticar/login
+Content-Type: application/json
+
+{
+  "email": "usuario@email.com",
+  "senha": "SenhaForte@123"
+}
+
+###
+
+### Renovar token usando refresh token
+POST {{baseUrl}}/autenticar/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "seu_refresh_token_aqui"
+}
+
+###
+
+### Alterar senha do usuário autenticado
+PUT {{baseUrl}}/autenticar/alterar-senha
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "senhaAtual": "SenhaForte@123",
+  "novaSenha": "NovaSenhaForte@456"
+}

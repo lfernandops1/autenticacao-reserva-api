@@ -1,8 +1,8 @@
 package com.autenticacao.api.app.domain.entity;
 
-import static com.autenticacao.api.app.Constantes.SCHEMA.SCHEMA_AUTENTICACAO;
-import static com.autenticacao.api.app.Constantes.TABELAS.TABELA_REFRESH_TOKEN;
-import static com.autenticacao.api.app.Constantes.TABELA_AUTENTICACAO.USUARIO;
+import static com.autenticacao.api.app.Constantes.ColunasAutenticacao.USUARIO;
+import static com.autenticacao.api.app.Constantes.Schema.AUTENTICACAO;
+import static com.autenticacao.api.app.Constantes.Tabelas.REFRESH_TOKEN;
 
 import java.time.LocalDateTime;
 
@@ -10,7 +10,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = TABELA_REFRESH_TOKEN, schema = SCHEMA_AUTENTICACAO)
+@Table(name = REFRESH_TOKEN, schema = AUTENTICACAO)
 @Getter
 @Setter
 @NoArgsConstructor

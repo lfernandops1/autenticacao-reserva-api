@@ -1,46 +1,39 @@
 package com.autenticacao.api.unitarios.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.autenticacao.api.app.config.security.TokenService;
+import com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider;
 import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
-import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
-import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
-import com.autenticacao.api.app.repository.AutenticacaoRepository;
 import com.autenticacao.api.app.repository.UsuarioRepository;
+import com.autenticacao.api.app.service.SenhaService;
 import com.autenticacao.api.app.service.impl.AutenticacaoServiceImpl;
 import com.autenticacao.api.app.service.impl.RefreshTokenServiceImpl;
 import com.autenticacao.api.app.service.impl.TentativaLoginServiceImpl;
-import com.autenticacao.api.exception.SenhaExpiradaException;
-import com.autenticacao.api.util.enums.UserRole;
+import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
+import com.autenticacao.api.app.exception.UsuarioNaoAutenticadoException;
+import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class AutenticacaoServiceImplTest {
@@ -48,235 +41,176 @@ class AutenticacaoServiceImplTest {
   @InjectMocks private AutenticacaoServiceImpl autenticacaoService;
 
   @Mock private UsuarioRepository usuarioRepository;
-
-  @Mock private AutenticacaoRepository autenticacaoRepository;
-
   @Mock private TokenService tokenService;
-
-  @Mock private PasswordEncoder passwordEncoder;
-
   @Mock private RefreshTokenServiceImpl refreshTokenService;
-
+  @Mock private SenhaService senhaService;
   @Mock private TentativaLoginServiceImpl tentativaLoginService;
-
   @Mock private AuthenticationManager authenticationManager;
+  @Mock private UsuarioAutenticadoProvider usuarioAutenticadoProvider;
 
-  private final UUID usuarioId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-  private final String email = "usuario@teste.com";
-  private final String senha = "Senha@123";
-  private final Usuario usuario = obterUsuario();
-  private final Autenticacao autenticacao = obterAutenticacao();
-  private final LoginUsuarioRequestDTO loginRequest = obterLoginRequest();
-  private final CadastroUsuarioRequest cadastroRequest = obterCadastroRequest();
-  private final AlterarSenhaRequestDTO alterarSenhaRequest = obterAlterarSenhaRequest();
+  private static final UUID USUARIO_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+  private static final String EMAIL = "usuario@email.com";
+  private static final String SENHA = "senha123";
 
-  private Usuario usuarioMock;
+  private Usuario usuario;
+  private LoginUsuarioRequestDTO loginRequest;
 
   @BeforeEach
   void setup() {
-    usuarioMock = new Usuario();
-    Autenticacao autenticacaoMock = new Autenticacao();
-    usuarioMock.setAutenticacao(autenticacaoMock);
+    usuario = Usuario.builder().id(USUARIO_ID).email(EMAIL).build();
 
-    Authentication authentication = Mockito.mock(Authentication.class);
-    Mockito.when(authentication.getPrincipal()).thenReturn(usuarioMock);
-
-    SecurityContext securityContext = Mockito.mock(SecurityContext.class);
-    Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
-
-    SecurityContextHolder.setContext(securityContext);
+    loginRequest = new LoginUsuarioRequestDTO(EMAIL, SENHA);
   }
 
-  // ======= loadUserByUsername =======
-  @Test
-  void loadUserByUsernameDeveRetornarUsuarioQuandoEmailExiste() {
-    when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-
-    UserDetails userDetails = autenticacaoService.loadUserByUsername(email);
-
-    assertThat(userDetails).isEqualTo(usuario);
-    verify(usuarioRepository).findByEmail(email);
-  }
+  // ====== LOGIN - CASOS DE SUCESSO E ERRO ======
 
   @Test
-  void loadUserByUsernameDeveLancarExcecaoQuandoEmailNaoExiste() {
-    when(usuarioRepository.findByEmail(email)).thenReturn(Optional.empty());
+  @DisplayName("Deve realizar login com sucesso e retornar tokens válidos")
+  void login_DeveRetornarTokensQuandoCredenciaisValidas() {
+    when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+    doNothing().when(tentativaLoginService).validarBloqueio(usuario);
 
-    assertThrows(
-        UsernameNotFoundException.class, () -> autenticacaoService.loadUserByUsername(email));
-  }
+    Authentication authentication = mock(Authentication.class);
+    when(authentication.getPrincipal()).thenReturn(usuario);
+    when(authenticationManager.authenticate(any())).thenReturn(authentication);
 
-  // ======= login =======
-  @Test
-  void loginDeveRetornarTokenQuandoCredenciaisValidas() {
-    when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-    when(authenticationManager.authenticate(any()))
-        .thenReturn(new UsernamePasswordAuthenticationToken(usuario, null));
-    when(tokenService.generateToken(usuario)).thenReturn("token");
-    when(refreshTokenService.createRefreshToken(usuario)).thenReturn("refreshToken");
+    doNothing().when(tentativaLoginService).resetarTentativas(usuario);
+    doNothing().when(senhaService).validarSenhaExpirada(usuario);
 
-    LoginResponseDTO response = autenticacaoService.login(loginRequest, authenticationManager);
+    when(tokenService.generateToken(usuario)).thenReturn("token-de-acesso");
+    when(refreshTokenService.createRefreshToken(usuario)).thenReturn("refresh-token");
 
-    assertThat(response.token()).isEqualTo("token");
-    assertThat(response.refreshToken()).isEqualTo("refreshToken");
+    LoginResponseDTO response = autenticacaoService.login(loginRequest);
+
+    assertThat(response.token()).isEqualTo("token-de-acesso");
+    assertThat(response.refreshToken()).isEqualTo("refresh-token");
+
+    verify(tentativaLoginService).validarBloqueio(usuario);
+    verify(authenticationManager).authenticate(any());
     verify(tentativaLoginService).resetarTentativas(usuario);
+    verify(senhaService).validarSenhaExpirada(usuario);
   }
 
   @Test
-  void loginDeveLancarExcecaoQuandoCredenciaisInvalidas() {
-    when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
+  @DisplayName("Deve lançar exceção ao tentar login com usuário não cadastrado")
+  void loginDeveLancarExcecaoQuandoUsuarioNaoEncontrado() {
+    when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+    AutenticacaoApiRunTimeException exception =
+        assertThrows(
+            AutenticacaoApiRunTimeException.class, () -> autenticacaoService.login(loginRequest));
+
+    assertThat(exception.getMessage()).contains(ERRO_REALIZAR_LOGIN.getChave());
+
+    verify(tentativaLoginService, never()).validarBloqueio(any());
+    verify(authenticationManager, never()).authenticate(any());
+  }
+
+  @Test
+  @DisplayName("Deve registrar falha e lançar exceção customizada quando credenciais inválidas")
+  void loginDeveRegistrarFalhaEAguardarExcecaoParaCredenciaisInvalidas() {
+    when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+    doNothing().when(tentativaLoginService).validarBloqueio(any(Usuario.class));
+
     when(authenticationManager.authenticate(any()))
         .thenThrow(new BadCredentialsException("Credenciais inválidas"));
 
-    assertThrows(
-        BadCredentialsException.class,
-        () -> autenticacaoService.login(loginRequest, authenticationManager));
+    AutenticacaoApiRunTimeException ex =
+        assertThrows(
+            AutenticacaoApiRunTimeException.class, () -> autenticacaoService.login(loginRequest));
 
-    verify(tentativaLoginService).registrarFalha(usuario);
+    assertThat(ex.getMessage()).contains(ERRO_REALIZAR_LOGIN.getChave());
+
+    verify(tentativaLoginService).registrarFalha(argThat(u -> u.getEmail().equals(EMAIL)));
   }
 
   @Test
-  void loginDeveLancarExcecaoQuandoSenhaExpirada() {
-    Autenticacao autenticacaoExpirada = obterAutenticacao();
-    autenticacaoExpirada.setDataHoraAtualizacao(LocalDateTime.now().minusDays(91));
-    usuario.setAutenticacao(autenticacaoExpirada);
+  @DisplayName("Deve lançar exceção quando usuário estiver bloqueado no login")
+  void loginDeveLancarExcecaoQuandoUsuarioBloqueado() {
+    when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+    doThrow(new RuntimeException("Usuário bloqueado"))
+        .when(tentativaLoginService)
+        .validarBloqueio(any());
 
-    when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
-    when(authenticationManager.authenticate(any()))
-        .thenReturn(new UsernamePasswordAuthenticationToken(usuario, null));
+    AutenticacaoApiRunTimeException ex =
+        assertThrows(
+            AutenticacaoApiRunTimeException.class, () -> autenticacaoService.login(loginRequest));
 
-    assertThrows(
-        SenhaExpiradaException.class,
-        () -> autenticacaoService.login(loginRequest, authenticationManager));
+    assertThat(ex.getMessage()).contains(ERRO_REALIZAR_LOGIN.getChave());
+
+    verify(authenticationManager, never()).authenticate(any());
   }
 
-  // ======= criarAutenticacao =======
-  @Test
-  void criarAutenticacaoDeveSalvarQuandoNaoExistir() {
-    when(autenticacaoRepository.findByUsuario(usuario)).thenReturn(Optional.empty());
-    when(passwordEncoder.encode(any())).thenReturn("senhaCriptografada");
-
-    autenticacaoService.criarAutenticacao(cadastroRequest, usuario);
-
-    verify(autenticacaoRepository).save(any(Autenticacao.class));
-  }
+  // ====== ALTERAR SENHA - CASOS DE SUCESSO E ERRO ======
 
   @Test
-  void criarAutenticacaoDeveLancarExcecaoQuandoJaExistir() {
-    when(autenticacaoRepository.findByUsuario(usuario)).thenReturn(Optional.of(autenticacao));
+  @DisplayName("Deve alterar senha com sucesso para usuário autenticado")
+  void alterarSenhaDeveAlterarSenhaQuandoUsuarioAutenticado() {
+    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
 
-    assertThrows(
-        IllegalStateException.class,
-        () -> autenticacaoService.criarAutenticacao(cadastroRequest, usuario));
-  }
+    when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.of(USUARIO_ID));
+    when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.of(usuario));
+    doNothing().when(senhaService).alterarSenha(usuario, dto.senha());
 
-  // ======= alterarSenha =======
-  @Test
-  void alterarSenhaDeveAtualizarSenhaComSucesso() {
+    autenticacaoService.alterarSenha(dto);
 
-    when(usuarioRepository.findById(usuarioMock.getId())).thenReturn(Optional.of(usuarioMock));
-    when(passwordEncoder.encode(any())).thenReturn("novaSenhaCriptografada");
-
-    AlterarSenhaRequestDTO requestDTO = new AlterarSenhaRequestDTO("senhaNova");
-
-    autenticacaoService.alterarSenha(requestDTO);
-
-    assertThat(usuarioMock.getAutenticacao().getSenha()).isEqualTo("novaSenhaCriptografada");
-    assertThat(usuarioMock.getAutenticacao().getDataHoraAtualizacao()).isNotNull();
-    verify(autenticacaoRepository).save(usuarioMock.getAutenticacao());
+    verify(senhaService).alterarSenha(usuario, dto.senha());
   }
 
   @Test
+  @DisplayName("Deve lançar exceção ao tentar alterar senha sem usuário autenticado")
+  void alterarSenha_DeveLancarExcecaoQuandoUsuarioNaoAutenticado() {
+    when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.empty());
+
+    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
+
+    AutenticacaoApiRunTimeException ex =
+        assertThrows(
+            AutenticacaoApiRunTimeException.class, () -> autenticacaoService.alterarSenha(dto));
+
+    assertThat(ex.getMessage()).contains(ERRO_ALTERAR_SENHA.getChave());
+    assertThat(ex.getCause()).isInstanceOf(UsuarioNaoAutenticadoException.class);
+    assertThat(ex.getCause().getMessage()).isEqualTo(USUARIO_NAO_AUTENTICADO.getChave());
+
+    verify(usuarioRepository, never()).findById(any());
+    verify(senhaService, never()).alterarSenha(any(), any());
+  }
+
+  @Test
+  @DisplayName("Deve lançar exceção quando usuário não for encontrado ao alterar senha")
   void alterarSenhaDeveLancarExcecaoQuandoUsuarioNaoEncontrado() {
-    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+    when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.of(USUARIO_ID));
+    when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.empty());
 
-    assertThrows(
-        RuntimeException.class, () -> autenticacaoService.alterarSenha(alterarSenhaRequest));
-  }
+    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
 
-  // ======= desativarAutenticacao =======
-  @Test
-  void desativarAutenticacaoDeveDesativarComSucesso() {
-    when(autenticacaoRepository.buscarPorUsuarioId(usuarioId))
-        .thenReturn(Optional.of(autenticacao));
+    AutenticacaoApiRunTimeException ex =
+        assertThrows(
+            AutenticacaoApiRunTimeException.class, () -> autenticacaoService.alterarSenha(dto));
 
-    autenticacaoService.desativarAutenticacao(usuarioId);
+    assertThat(ex.getMessage()).contains(ERRO_ALTERAR_SENHA.getChave());
+    assertThat(ex.getCause()).isInstanceOf(UsuarioNaoEncontradoException.class);
+    assertThat(ex.getCause().getMessage()).isEqualTo(USUARIO_NAO_ENCONTRADO.getChave());
 
-    assertThat(autenticacao.getAtivo()).isFalse();
-    assertThat(autenticacao.getDataHoraExclusao()).isNotNull();
-    verify(autenticacaoRepository).save(autenticacao);
+    verify(senhaService, never()).alterarSenha(any(), any());
   }
 
   @Test
-  void desativarAutenticacaoDeveLancarExcecaoQuandoNaoEncontrado() {
-    when(autenticacaoRepository.buscarPorUsuarioId(usuarioId)).thenReturn(Optional.empty());
+  @DisplayName("Deve lançar exceção customizada ao ocorrer erro inesperado na alteração de senha")
+  void alterarSenhaDeveLancarAutenticacaoApiRunTimeExceptionEmErroInesperado() {
+    when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.of(USUARIO_ID));
+    when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.of(usuario));
+    doThrow(new RuntimeException("Erro inesperado"))
+        .when(senhaService)
+        .alterarSenha(usuario, "novaSenha123");
 
-    assertThrows(
-        ResponseStatusException.class, () -> autenticacaoService.desativarAutenticacao(usuarioId));
-  }
+    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
 
-  // ======= senhaExpirada =======
-  @Test
-  void senhaExpiradaDeveRetornarTrueQuandoExpirada() {
-    Autenticacao autenticacaoExpirada = obterAutenticacao();
-    autenticacaoExpirada.setDataHoraAtualizacao(LocalDateTime.now().minusDays(91));
+    AutenticacaoApiRunTimeException ex =
+        assertThrows(
+            AutenticacaoApiRunTimeException.class, () -> autenticacaoService.alterarSenha(dto));
 
-    boolean resultado = autenticacaoService.senhaExpirada(autenticacaoExpirada);
-
-    assertThat(resultado).isTrue();
-  }
-
-  @Test
-  void senhaExpiradaDeveRetornarFalseQuandoNaoExpirada() {
-    Autenticacao autenticacaoValida = obterAutenticacao();
-    autenticacaoValida.setDataHoraAtualizacao(LocalDateTime.now().minusDays(89));
-
-    boolean resultado = autenticacaoService.senhaExpirada(autenticacaoValida);
-
-    assertThat(resultado).isFalse();
-  }
-
-  // ===================== MÉTODOS AUXILIARES =====================
-
-  private Usuario obterUsuario() {
-    Usuario usuario = new Usuario();
-    usuario.setId(usuarioId);
-    usuario.setEmail(email);
-    usuario.setAutenticacao(obterAutenticacao());
-    return usuario;
-  }
-
-  private Autenticacao obterAutenticacao() {
-    Autenticacao autenticacao = new Autenticacao();
-    autenticacao.setId(UUID.randomUUID());
-    autenticacao.setSenha("senhaCriptografada");
-    autenticacao.setEmail(email);
-    autenticacao.setUsuario(usuario);
-    autenticacao.setDataHoraAtualizacao(LocalDateTime.now());
-    autenticacao.setDataHoraCriacao(LocalDateTime.now());
-    autenticacao.setAtivo(true);
-    return autenticacao;
-  }
-
-  private LoginUsuarioRequestDTO obterLoginRequest() {
-    return new LoginUsuarioRequestDTO(email, senha);
-  }
-
-  private CadastroUsuarioRequest obterCadastroRequest() {
-    return new CadastroUsuarioRequest(
-        "Nome",
-        "Sobrenome",
-        email,
-        senha,
-        "999999999",
-        LocalDate.of(1990, 1, 1),
-        true,
-        UserRole.USER,
-        LocalDateTime.now(),
-        LocalDateTime.now());
-  }
-
-  private AlterarSenhaRequestDTO obterAlterarSenhaRequest() {
-    return new AlterarSenhaRequestDTO("NovaSenha@123");
+    assertThat(ex.getMessage()).contains(ERRO_ALTERAR_SENHA.getChave());
+    assertThat(ex.getCause()).isInstanceOf(RuntimeException.class);
   }
 }

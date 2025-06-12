@@ -1,9 +1,10 @@
 package com.autenticacao.api.app.config.security;
 
-import static com.autenticacao.api.app.Constantes.ROTAS.*;
+import static com.autenticacao.api.app.Constantes.Rotas.*;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -18,9 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfigurations {
 
   private final SecurityFilter securityFilter;
@@ -52,9 +53,10 @@ public class SecurityConfigurations {
   }
 
   @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+  @Lazy
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
       throws Exception {
-    return configuration.getAuthenticationManager();
+    return config.getAuthenticationManager();
   }
 
   @Bean

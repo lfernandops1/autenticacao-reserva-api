@@ -1,27 +1,10 @@
 package com.autenticacao.api.unitarios.service;
 
-import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
-import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
-import com.autenticacao.api.app.domain.DTO.response.UsuarioDetalhadoResponse;
-import com.autenticacao.api.app.domain.DTO.response.UsuarioResumoResponse;
-import com.autenticacao.api.app.domain.entity.Usuario;
-import com.autenticacao.api.app.domain.mapper.UsuarioMapper;
-import com.autenticacao.api.app.repository.UsuarioRepository;
-import com.autenticacao.api.app.service.HistoricoUsuarioService;
-import com.autenticacao.api.app.service.impl.AutenticacaoServiceImpl;
-import com.autenticacao.api.app.service.impl.UsuarioServiceImpl;
-import com.autenticacao.api.exception.ValidacaoException;
-import com.autenticacao.api.exception.ValidacaoNotFoundException;
-import com.autenticacao.api.util.ValidatorUsuarioUtil;
-import com.autenticacao.api.util.enums.EValidacao;
-import com.autenticacao.api.util.enums.UserRole;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.EMAIL_JA_CADASTRADO;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.TELEFONE_JA_CADASTRADO;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,274 +12,260 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
+import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
+import com.autenticacao.api.app.domain.DTO.response.UsuarioDetalhadoResponse;
+import com.autenticacao.api.app.domain.DTO.response.UsuarioResumoResponse;
+import com.autenticacao.api.app.domain.entity.Usuario;
+import com.autenticacao.api.app.domain.mapper.UsuarioMapper;
+import com.autenticacao.api.app.repository.UsuarioRepository;
+import com.autenticacao.api.app.service.AutenticacaoCadastroService;
+import com.autenticacao.api.app.service.HistoricoUsuarioService;
+import com.autenticacao.api.app.service.impl.UsuarioServiceImpl;
+import com.autenticacao.api.app.exception.ValidacaoException;
+import com.autenticacao.api.app.exception.ValidacaoNotFoundException;
+import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
+import com.autenticacao.api.app.util.enums.TipoMovimentacao;
+import com.autenticacao.api.app.util.enums.UserRole;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceImplTest {
 
-    @InjectMocks
-    private UsuarioServiceImpl usuarioService;
+  @InjectMocks private UsuarioServiceImpl usuarioService;
 
-    @Mock
-    private UsuarioRepository usuarioRepository;
+  @Mock private UsuarioRepository usuarioRepository;
+  @Mock private AutenticacaoCadastroService autenticacaoCadastroService;
+  @Mock private UsuarioMapper usuarioMapper;
+  @Mock private HistoricoUsuarioService historicoUsuarioService;
+  @Mock private ValidatorUsuarioUtil usuarioValidator;
 
-    @Mock
-    private AutenticacaoServiceImpl autenticacaoServiceImpl;
+  private UUID usuarioId;
+  private Usuario usuario;
+  private AtualizarUsuarioRequest atualizarRequest;
+  private CadastroUsuarioRequest cadastroRequest;
+  private UsuarioDetalhadoResponse detalhadoResponse;
+  private UsuarioResumoResponse resumoResponse;
 
-    @Mock
-    private UsuarioMapper usuarioMapper;
+  @BeforeEach
+  void setup() {
+    usuarioId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    usuario = obterUsuario();
+    atualizarRequest = obterAtualizarUsuarioRequest();
+    cadastroRequest = obterCadastroUsuarioRequest();
+    detalhadoResponse = obterUsuarioDetalhadoResponse();
+    resumoResponse = obterUsuarioResumoResponse();
+  }
 
-    @Mock
-    private HistoricoUsuarioService historicoUsuarioService;
+  // ======= BUSCAR USUÁRIO POR ID =======
 
-    @Mock
-    private ValidatorUsuarioUtil usuarioValidator;
+  @Test
+  @DisplayName("Deve buscar usuário por ID com sucesso")
+  void deveBuscarUsuarioPorIdComSucesso() {
+    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+    when(usuarioMapper.toDetalhado(usuario)).thenReturn(detalhadoResponse);
 
-    private final UUID usuarioId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private final Usuario usuario = obterUsuario();
-    private final AtualizarUsuarioRequest atualizarRequest = obterAtualizarUsuarioRequest();
-    private final CadastroUsuarioRequest cadastroRequest = obterCadastroUsuarioRequest();
-    private final UsuarioDetalhadoResponse detalhadoResponse = obterUsuarioDetalhadoResponse();
-    private final UsuarioResumoResponse resumoResponse = obterUsuarioResumoResponse();
+    UsuarioDetalhadoResponse response = usuarioService.buscarPorId(usuarioId);
 
-    // ==================== BUSCAR POR ID ====================
-    @Nested
-    class BuscarPorIdTests {
-        @Test
-        void deveRetornarDetalhadoQuandoUsuarioExiste() {
-            when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-            when(usuarioMapper.toDetalhado(usuario)).thenReturn(detalhadoResponse);
+    assertThat(response).isEqualTo(detalhadoResponse);
+  }
 
-            UsuarioDetalhadoResponse response = usuarioService.buscarPorId(usuarioId);
+  @Test
+  @DisplayName("Deve lançar exceção ao buscar usuário inexistente por ID")
+  void deveLancarExcecaoAoBuscarUsuarioInexistentePorId() {
+    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
-            assertThat(response).isEqualTo(detalhadoResponse);
-            verify(usuarioRepository).findById(usuarioId);
-        }
+    assertThrows(ValidacaoNotFoundException.class, () -> usuarioService.buscarPorId(usuarioId));
+  }
 
-        @Test
-        void deveLancarNotFoundExceptionQuandoUsuarioNaoExiste() {
-            when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+  // ======= CRIAR USUÁRIO =======
 
-            ValidacaoNotFoundException exception =
-                    assertThrows(ValidacaoNotFoundException.class, () -> usuarioService.buscarPorId(usuarioId));
+  @Test
+  @DisplayName("Deve criar usuário com sucesso sem registrar histórico")
+  void deveCriarUsuarioComSucessoSemRegistrarHistorico() {
+    when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.empty());
+    when(usuarioRepository.findByTelefone(cadastroRequest.telefone())).thenReturn(Optional.empty());
+    when(usuarioMapper.toEntity(cadastroRequest)).thenReturn(usuario);
+    when(usuarioRepository.save(usuario)).thenReturn(usuario);
+    when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
 
-            assertThat(exception.getMessage())
-                    .isEqualTo(EValidacao.USUARIO_NAO_ENCONTRADO_POR_ID.getMessageKey());
-        }
-    }
+    UsuarioResumoResponse response = usuarioService.criarUsuario(cadastroRequest);
 
-    // ==================== CRIAR USUÁRIO ====================
-    @Nested
-    class CriarUsuarioTests {
-        @Test
-        void deveCriarUsuarioComSucesso() {
-            when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.empty());
-            when(usuarioRepository.findByTelefone(cadastroRequest.telefone())).thenReturn(Optional.empty());
-            when(usuarioMapper.toEntity(cadastroRequest)).thenReturn(usuario);
-            when(usuarioRepository.save(usuario)).thenReturn(usuario);
-            when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
+    assertThat(response).isEqualTo(resumoResponse);
+    verify(autenticacaoCadastroService).criar(cadastroRequest, usuario);
+    verify(historicoUsuarioService, never()).registrarAlteracaoUsuario(any(), any(), any());
+  }
 
-            UsuarioResumoResponse response = usuarioService.criarUsuario(cadastroRequest);
+  @Test
+  @DisplayName("Deve lançar exceção ao tentar criar usuário com email duplicado")
+  void deveLancarExcecaoAoCriarUsuarioComEmailDuplicado() {
+    when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.of(usuario));
 
-            assertThat(response).isEqualTo(resumoResponse);
-            verify(autenticacaoServiceImpl).criarAutenticacao(cadastroRequest, usuario);
-        }
+    ValidacaoException ex =
+        assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
+    assertThat(ex.getMessage()).contains(EMAIL_JA_CADASTRADO.getChave());
+  }
 
-        @Test
-        void deveLancarQuandoEmailJaCadastrado() {
-            when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.of(usuario));
+  @Test
+  @DisplayName("Deve lançar exceção ao tentar criar usuário com telefone duplicado")
+  void deveLancarExcecaoAoCriarUsuarioComTelefoneDuplicado() {
+    when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.empty());
+    when(usuarioRepository.findByTelefone(cadastroRequest.telefone()))
+        .thenReturn(Optional.of(usuario));
 
-            ValidacaoException exception =
-                    assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
+    ValidacaoException ex =
+        assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
+    assertThat(ex.getMessage()).contains(TELEFONE_JA_CADASTRADO.getChave());
+  }
 
-            assertThat(exception.getMessage()).isEqualTo(EValidacao.EMAIL_JA_CADASTRADO.getMessageKey());
-        }
+  // ======= ATUALIZAR USUÁRIO =======
 
-        @Test
-        void deveLancarQuandoTelefoneJaCadastrado() {
-            when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.empty());
-            when(usuarioRepository.findByTelefone(cadastroRequest.telefone())).thenReturn(Optional.of(usuario));
+  @Test
+  @DisplayName("Deve atualizar usuário e registrar histórico de alteração")
+  void deveAtualizarUsuarioERegistrarHistorico() {
+    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+    doNothing().when(usuarioValidator).validarFormatoEmailETelefone(atualizarRequest);
 
-            ValidacaoException exception =
-                    assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
+    Usuario usuarioAtualizado =
+        usuario.toBuilder()
+            .nome(atualizarRequest.nome())
+            .sobrenome(atualizarRequest.sobrenome())
+            .email(atualizarRequest.email())
+            .telefone(atualizarRequest.telefone())
+            .dataNascimento(atualizarRequest.dataNascimento())
+            .build();
 
-            assertThat(exception.getMessage())
-                    .isEqualTo(EValidacao.TELEFONE_JA_CADASTRADO.getMessageKey());
-        }
-    }
+    when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioAtualizado);
 
-    // ==================== ATUALIZAR USUÁRIO ====================
-    @Nested
-    class AtualizarUsuarioTests {
-        @Test
-        void deveAtualizarCamposParciaisComSucesso() {
-            when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-            doNothing().when(usuarioValidator).validarFormatoEmailETelefone(atualizarRequest);
+    UsuarioDetalhadoResponse esperado =
+        new UsuarioDetalhadoResponse(
+            usuarioId,
+            atualizarRequest.nome(),
+            atualizarRequest.sobrenome(),
+            atualizarRequest.email(),
+            atualizarRequest.telefone(),
+            UserRole.USER,
+            true);
 
-            // Simulamos que o save retorna um novo objeto atualizado (builder)
-            Usuario usuarioAtualizado = usuario.toBuilder()
-                    .nome(atualizarRequest.nome())
-                    .sobrenome(atualizarRequest.sobrenome())
-                    .email(atualizarRequest.email())
-                    .telefone(atualizarRequest.telefone())
-                    .build();
+    when(usuarioMapper.toDetalhado(usuarioAtualizado)).thenReturn(esperado);
 
-            when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioAtualizado);
+    UsuarioDetalhadoResponse response =
+        usuarioService.atualizarUsuario(usuarioId, atualizarRequest);
 
-            UsuarioDetalhadoResponse esperado = new UsuarioDetalhadoResponse(
-                    usuarioId,
-                    atualizarRequest.nome(),
-                    atualizarRequest.sobrenome(),
-                    atualizarRequest.email(),
-                    atualizarRequest.telefone(),
-                    UserRole.USER,
-                    true);
+    assertThat(response).isEqualTo(esperado);
 
-            when(usuarioMapper.toDetalhado(usuarioAtualizado)).thenReturn(esperado);
+    verify(historicoUsuarioService)
+        .registrarAlteracaoUsuario(
+            any(Usuario.class), nullable(Usuario.class), eq(TipoMovimentacao.ATUALIZACAO_DADOS));
+  }
 
-            UsuarioDetalhadoResponse response = usuarioService.atualizarUsuario(usuarioId, atualizarRequest);
+  @Test
+  @DisplayName("Deve lançar exceção ao tentar atualizar usuário inexistente")
+  void deveLancarExcecaoAoAtualizarUsuarioInexistente() {
+    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
-            assertThat(response).isEqualTo(esperado);
+    assertThrows(
+        ValidacaoNotFoundException.class,
+        () -> usuarioService.atualizarUsuario(usuarioId, atualizarRequest));
+  }
 
-            // Captura o usuário salvo para validar campos alterados
-            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
-            verify(usuarioRepository).save(captor.capture());
-            Usuario usuarioSalvo = captor.getValue();
+  // ======= DESATIVAR USUÁRIO =======
 
-            assertThat(usuarioSalvo.getNome()).isEqualTo(atualizarRequest.nome());
-            assertThat(usuarioSalvo.getSobrenome()).isEqualTo(atualizarRequest.sobrenome());
-            assertThat(usuarioSalvo.getEmail()).isEqualTo(atualizarRequest.email());
-            assertThat(usuarioSalvo.getTelefone()).isEqualTo(atualizarRequest.telefone());
+  @Test
+  @DisplayName("Deve desativar usuário e registrar histórico")
+  void deveDesativarUsuarioERegistrarHistorico() {
+    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+    when(usuarioRepository.save(usuario)).thenReturn(usuario);
+    doNothing().when(autenticacaoCadastroService).desativar(usuarioId);
 
-            verify(usuarioValidator).validarFormatoEmailETelefone(atualizarRequest);
-            verify(usuarioRepository).findById(usuarioId);
-            verify(usuarioMapper).toDetalhado(usuarioAtualizado);
-        }
+    usuarioService.desativarUsuario(usuarioId);
 
-        @Test
-        void deveLancarQuandoUsuarioNaoExiste() {
-            when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+    assertThat(usuario.isAtivo()).isFalse();
+    assertThat(usuario.getDataHoraExclusao()).isNotNull();
 
-            ValidacaoNotFoundException exception =
-                    assertThrows(
-                            ValidacaoNotFoundException.class,
-                            () -> usuarioService.atualizarUsuario(usuarioId, atualizarRequest));
+    verify(autenticacaoCadastroService).desativar(usuarioId);
+    verify(historicoUsuarioService)
+        .registrarAlteracaoUsuario(eq(usuario), any(), eq(TipoMovimentacao.DESATIVACAO));
+  }
 
-            assertThat(exception.getMessage())
-                    .isEqualTo(EValidacao.USUARIO_NAO_ENCONTRADO_POR_ID.getMessageKey());
-        }
-    }
+  @Test
+  @DisplayName("Deve lançar exceção ao tentar desativar usuário inexistente")
+  void deveLancarExcecaoAoDesativarUsuarioInexistente() {
+    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
-    // ==================== DESATIVAR USUÁRIO ====================
-    @Nested
-    class DesativarUsuarioTests {
-        @Test
-        void deveDesativarComSucesso() {
-            when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-            when(usuarioRepository.save(usuario)).thenReturn(usuario);
-            doNothing().when(autenticacaoServiceImpl).desativarAutenticacao(usuarioId);
+    assertThrows(
+        ValidacaoNotFoundException.class, () -> usuarioService.desativarUsuario(usuarioId));
+  }
 
-            usuarioService.desativarUsuario(usuarioId);
+  // ======= LISTAR TODOS OS USUÁRIOS =======
 
-            assertThat(usuario.isAtivo()).isFalse();
-            assertThat(usuario.getDataHoraExclusao()).isNotNull();
-            verify(autenticacaoServiceImpl).desativarAutenticacao(usuarioId);
-            verify(usuarioRepository).save(usuario);
-        }
+  @Test
+  @DisplayName("Deve listar todos os usuários")
+  void deveListarTodosUsuarios() {
+    List<Usuario> usuarios = List.of(usuario);
+    List<UsuarioResumoResponse> resumos = List.of(resumoResponse);
 
-        @Test
-        void deveLancarQuandoUsuarioNaoExiste() {
-            when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+    when(usuarioRepository.findAll()).thenReturn(usuarios);
+    when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
 
-            ValidacaoNotFoundException exception =
-                    assertThrows(
-                            ValidacaoNotFoundException.class,
-                            () -> usuarioService.desativarUsuario(usuarioId));
+    List<UsuarioResumoResponse> resultado = usuarioService.listarTodos();
 
-            assertThat(exception.getMessage())
-                    .isEqualTo(EValidacao.USUARIO_NAO_ENCONTRADO_POR_ID.getMessageKey());
-        }
-    }
+    assertThat(resultado).isEqualTo(resumos);
+  }
 
-    // ==================== LISTAR TODOS ====================
-    @Nested
-    class ListarTodosTests {
-        @Test
-        void deveRetornarListaDeResumo() {
-            List<Usuario> usuarios = List.of(usuario);
-            List<UsuarioResumoResponse> resumoList = List.of(resumoResponse);
+  // ======= MÉTODOS AUXILIARES =======
 
-            when(usuarioRepository.findAll()).thenReturn(usuarios);
-            when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
+  private Usuario obterUsuario() {
+    return Usuario.builder()
+        .id(usuarioId)
+        .nome("João")
+        .sobrenome("Silva")
+        .email("joao.silva@email.com")
+        .telefone("123456789")
+        .ativo(true)
+        .dataNascimento(LocalDate.of(1990, 1, 1))
+        .build();
+  }
 
-            List<UsuarioResumoResponse> responseList = usuarioService.listarTodos();
+  private AtualizarUsuarioRequest obterAtualizarUsuarioRequest() {
+    return new AtualizarUsuarioRequest(
+        "João Atualizado",
+        "Silva Atualizado",
+        "987654321",
+        "joao.atualizado@email.com",
+        LocalDate.of(1991, 2, 2),
+        LocalDateTime.now(),
+        LocalDateTime.now());
+  }
 
-            assertThat(responseList).hasSize(1).containsExactlyElementsOf(resumoList);
+  private CadastroUsuarioRequest obterCadastroUsuarioRequest() {
+    return new CadastroUsuarioRequest(
+        "Maria",
+        "Fernandes",
+        "maria@email.com",
+        "senhaSegura123",
+        "111222333",
+        LocalDate.of(1995, 5, 5),
+        true,
+        UserRole.USER,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+  }
 
-            verify(usuarioRepository).findAll();
-            verify(usuarioMapper, times(usuarios.size())).toResumo(any());
-        }
-    }
+  private UsuarioDetalhadoResponse obterUsuarioDetalhadoResponse() {
+    return new UsuarioDetalhadoResponse(
+        usuarioId, "João", "Silva", "joao.silva@email.com", "123456789", UserRole.USER, true);
+  }
 
-    // ======= MÉTODOS AUXILIARES PARA CRIAR OBJETOS DE TESTE =======
-    private Usuario obterUsuario() {
-        return Usuario.builder()
-                .id(usuarioId)
-                .nome("Maria")
-                .sobrenome("Silva")
-                .email("maria@gmail.com")
-                .telefone("11999999999")
-                .dataNascimento(LocalDate.of(1990, 6, 20))
-                .role(UserRole.USER)
-                .ativo(true)
-                .build();
-    }
-
-    private AtualizarUsuarioRequest obterAtualizarUsuarioRequest() {
-        return new AtualizarUsuarioRequest(
-                "NomeAtualizado",
-                "SobrenomeAtualizado",
-                "988888888",
-                "email2@teste.com",
-                LocalDate.of(1990, 1, 1),
-                LocalDateTime.of(2025, 6, 6, 10, 0, 0),
-                LocalDateTime.of(2025, 6, 1, 12, 30, 0));
-    }
-
-    private CadastroUsuarioRequest obterCadastroUsuarioRequest() {
-        return new CadastroUsuarioRequest(
-                "NomeTeste",
-                "SobrenomeTeste",
-                "email@teste.com",
-                "Senha@123",
-                "999999999",
-                LocalDate.of(1990, 1, 1),
-                true,
-                UserRole.USER,
-                LocalDateTime.of(2025, 6, 6, 10, 0),
-                LocalDateTime.of(2025, 6, 1, 12, 30));
-    }
-
-    private UsuarioDetalhadoResponse obterUsuarioDetalhadoResponse() {
-        return new UsuarioDetalhadoResponse(
-                usuarioId,
-                "Maria",
-                "Silva",
-                "maria@gmail.com",
-                "11999999999",
-                UserRole.USER,
-                true
-        );
-    }
-
-    private UsuarioResumoResponse obterUsuarioResumoResponse() {
-        return new UsuarioResumoResponse(
-                UUID.fromString("44444444-4444-4444-4444-444444444444"),
-                "NomeTeste SobrenomeTeste",
-                "email@teste.com",
-                "999999999",
-                true);
-    }
+  private UsuarioResumoResponse obterUsuarioResumoResponse() {
+    return new UsuarioResumoResponse(
+        usuarioId, "Maria Fernandes", "maria@email.com", "111222333", true);
+  }
 }

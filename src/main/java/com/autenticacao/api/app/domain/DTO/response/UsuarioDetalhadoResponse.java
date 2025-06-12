@@ -2,7 +2,7 @@ package com.autenticacao.api.app.domain.DTO.response;
 
 import java.util.UUID;
 
-import com.autenticacao.api.util.enums.UserRole;
+import com.autenticacao.api.app.util.enums.UserRole;
 
 public record UsuarioDetalhadoResponse(
     UUID id,

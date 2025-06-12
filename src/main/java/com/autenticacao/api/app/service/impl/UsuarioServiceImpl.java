@@ -1,8 +1,7 @@
 package com.autenticacao.api.app.service.impl;
 
-import static com.autenticacao.api.app.Constantes.Mensagens.*;
-import static com.autenticacao.api.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
-import static com.autenticacao.api.util.SecurityUtil.obterUsuarioLogado;
+import static com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider.obterUsuarioLogado;
+import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,32 +16,33 @@ import com.autenticacao.api.app.domain.DTO.response.UsuarioResumoResponse;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.domain.mapper.UsuarioMapper;
 import com.autenticacao.api.app.repository.UsuarioRepository;
-import com.autenticacao.api.app.service.AutenticacaoService;
+import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 import com.autenticacao.api.app.service.HistoricoUsuarioService;
 import com.autenticacao.api.app.service.UsuarioService;
-import com.autenticacao.api.exception.ValidacaoException;
-import com.autenticacao.api.exception.ValidacaoNotFoundException;
-import com.autenticacao.api.util.ValidatorUsuarioUtil;
-import com.autenticacao.api.util.enums.EValidacao;
-import com.autenticacao.api.util.enums.TipoMovimentacao;
+import com.autenticacao.api.app.exception.ValidacaoException;
+import com.autenticacao.api.app.exception.ValidacaoNotFoundException;
+import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
+import com.autenticacao.api.app.util.enums.MensagemSistema;
+import com.autenticacao.api.app.util.enums.TipoMovimentacao;
 
 import lombok.RequiredArgsConstructor;
+
 /**
- * Serviço responsável pelo gerenciamento de usuários.
- * Implementa operações para criação, atualização, desativação e consulta de usuários.
+ * Serviço responsável pela gestão de usuários. Implementa operações para criação, atualização,
+ * desativação e consulta de usuários.
  */
 @Service
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
   private final UsuarioRepository usuarioRepository;
-  private final AutenticacaoService autenticacaoService;
+  private final AutenticacaoCadastroService autenticacaoCadastroService;
   private final UsuarioMapper usuarioMapper;
   private final ValidatorUsuarioUtil validatorUsuarioUtil;
   private final HistoricoUsuarioService historicoUsuarioService;
 
   /**
-   * Busca um usuário pelo seu ID.
+   * Busca um usuário pelo seu ‘ID’.
    *
    * @param id Identificador único do usuário.
    * @return Dados detalhados do usuário.
@@ -51,29 +51,28 @@ public class UsuarioServiceImpl implements UsuarioService {
   @Override
   public UsuarioDetalhadoResponse buscarPorId(UUID id) {
     return executarComandoComTratamentoErroComMensagem(
-            () -> usuarioMapper.toDetalhado(obterUsuarioOuFalhar(id)),
-            ERRO_AO_BUSCAR_USUARIO);
+        () -> usuarioMapper.toDetalhado(obterUsuarioOuFalhar(id)),
+        ERRO_AO_BUSCAR_USUARIO.getChave());
   }
 
   /**
-   * Cria um novo usuário a partir dos dados fornecidos.
-   * Valida a existência prévia e dados do usuário.
+   * Cria um usuário a partir dos dados fornecidos. Valida a existência prévia e dados do usuário.
    *
    * @param request Dados para cadastro de novo usuário.
    * @return Resumo do usuário criado.
-   * @throws ValidacaoException se email ou telefone já estiverem cadastrados.
+   * @throws ValidacaoException se e-mail ou telefone já estiverem cadastrados.
    */
   @Override
   public UsuarioResumoResponse criarUsuario(CadastroUsuarioRequest request) {
     validarNovoUsuario(request);
     Usuario usuario = salvarUsuario(usuarioMapper.toEntity(request));
-    autenticacaoService.criarAutenticacao(request, usuario);
+    autenticacaoCadastroService.criar(request, usuario);
 
     return usuarioMapper.toResumo(usuario);
   }
 
   /**
-   * Atualiza dados parciais do usuário identificado pelo ID.
+   * Atualiza dados parciais do usuário identificado pelo ‘ID’.
    *
    * @param id Identificador do usuário.
    * @param request Dados para atualização.
@@ -83,7 +82,7 @@ public class UsuarioServiceImpl implements UsuarioService {
   @Override
   public UsuarioDetalhadoResponse atualizarUsuario(UUID id, AtualizarUsuarioRequest request) {
     return executarComandoComTratamentoErroComMensagem(
-            () -> processarAtualizacaoUsuario(id, request), ERRO_AO_ATUALIZAR_DADOS_USUARIO);
+        () -> processarAtualizacaoUsuario(id, request), ERRO_AO_ATUALIZAR_DADOS_USUARIO.getChave());
   }
 
   /**
@@ -94,7 +93,7 @@ public class UsuarioServiceImpl implements UsuarioService {
    * @return Dados detalhados do usuário atualizado.
    */
   private UsuarioDetalhadoResponse processarAtualizacaoUsuario(
-          UUID id, AtualizarUsuarioRequest request) {
+      UUID id, AtualizarUsuarioRequest request) {
     validarDados(request);
 
     Usuario usuario = buscarUsuarioPorId(id);
@@ -102,7 +101,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     Usuario usuarioAtualizado = aplicarAtualizacoesParciais(request, usuario);
 
     historicoUsuarioService.registrarAlteracaoUsuario(
-            usuarioAtualizado, obterUsuarioLogado(), TipoMovimentacao.ATUALIZACAO_DADOS);
+        usuarioAtualizado, obterUsuarioLogado(), TipoMovimentacao.ATUALIZACAO_DADOS);
 
     Usuario salvo = salvarUsuario(usuarioAtualizado);
 
@@ -110,7 +109,7 @@ public class UsuarioServiceImpl implements UsuarioService {
   }
 
   /**
-   * Desativa o usuário identificado pelo ID, marcando-o como inativo e registrando histórico.
+   * Desativa o usuário identificado pelo 'ID', marcando-o como inativo e registrando histórico.
    *
    * @param id Identificador do usuário a desativar.
    * @throws ValidacaoNotFoundException se usuário não existir.
@@ -118,20 +117,20 @@ public class UsuarioServiceImpl implements UsuarioService {
   @Override
   public void desativarUsuario(UUID id) {
     executarComandoComTratamentoErroComMensagem(
-            () -> {
-              Usuario usuario = buscarUsuarioPorId(id);
+        () -> {
+          Usuario usuario = buscarUsuarioPorId(id);
 
-              desativar(usuario);
+          desativar(usuario);
 
-              salvarUsuario(usuario);
+          salvarUsuario(usuario);
 
-              autenticacaoService.desativarAutenticacao(usuario.getId());
+          autenticacaoCadastroService.desativar(usuario.getId());
 
-              registrarHistoricoDesativacao(usuario);
+          registrarHistoricoDesativacao(usuario);
 
-              return null;
-            },
-            ERRO_AO_DESATIVAR_USUARIO);
+          return null;
+        },
+        ERRO_AO_DESATIVAR_USUARIO.getChave());
   }
 
   /**
@@ -160,7 +159,7 @@ public class UsuarioServiceImpl implements UsuarioService {
   }
 
   /**
-   * Aplica atualizações parciais a uma entidade usuário usando padrão builder.
+   * Aplica atualizações parciais a uma entidade Usuario usando padrão builder.
    *
    * @param request Dados para atualização.
    * @param usuario Entidade original a ser atualizada.
@@ -205,19 +204,23 @@ public class UsuarioServiceImpl implements UsuarioService {
    */
   private void registrarHistoricoDesativacao(Usuario usuario) {
     historicoUsuarioService.registrarAlteracaoUsuario(
-            usuario, obterUsuarioLogado(), TipoMovimentacao.DESATIVACAO);
+        usuario, obterUsuarioLogado(), TipoMovimentacao.DESATIVACAO);
   }
 
   /**
-   * Busca um usuário pelo ID ou lança exceção se não existir.
+   * Busca um usuário pelo 'ID' ou lança exceção se não existir.
    *
    * @param id Identificador do usuário.
    * @return Usuário encontrado.
    * @throws ValidacaoNotFoundException se não encontrado.
    */
   private Usuario obterUsuarioOuFalhar(UUID id) {
-    return usuarioRepository.findById(id)
-            .orElseThrow(() -> new ValidacaoNotFoundException(EValidacao.USUARIO_NAO_ENCONTRADO_POR_ID, id.toString()));
+    return usuarioRepository
+        .findById(id)
+        .orElseThrow(
+            () ->
+                new ValidacaoNotFoundException(
+                    MensagemSistema.USUARIO_NAO_ENCONTRADO_POR_ID, id.toString()));
   }
 
   /**
@@ -238,25 +241,24 @@ public class UsuarioServiceImpl implements UsuarioService {
    */
   private Usuario salvarUsuario(Usuario usuario) {
     return executarComandoComTratamentoErroComMensagem(
-            () -> usuarioRepository.save(usuario), ERRO_AO_TENTAR_CRIAR_USUARIO //
-    );
+        () -> usuarioRepository.save(usuario), ERRO_AO_TENTAR_CRIAR_USUARIO.getChave());
   }
 
   /**
-   * Valida dados para criação de novo usuário, verificando duplicidade de email e telefone.
+   * Valida dados para criação de novo usuário, verificando duplicidade de e-mail e telefone.
    *
    * @param request Dados para cadastro.
-   * @throws ValidacaoException se email ou telefone já cadastrados.
+   * @throws ValidacaoException se e-mail ou telefone já cadastrados.
    */
   private void validarNovoUsuario(CadastroUsuarioRequest request) {
     this.validatorUsuarioUtil.validarFormatoEmailETelefone(request);
 
     if (usuarioRepository.findByEmail(request.email()).isPresent()) {
-      throw new ValidacaoException(EValidacao.EMAIL_JA_CADASTRADO, request.email());
+      throw new ValidacaoException(EMAIL_JA_CADASTRADO, request.email());
     }
 
     if (usuarioRepository.findByTelefone(request.telefone()).isPresent()) {
-      throw new ValidacaoException(EValidacao.TELEFONE_JA_CADASTRADO, request.telefone());
+      throw new ValidacaoException(TELEFONE_JA_CADASTRADO, request.telefone());
     }
   }
 }

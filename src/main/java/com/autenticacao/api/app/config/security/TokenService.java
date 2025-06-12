@@ -1,13 +1,12 @@
 package com.autenticacao.api.app.config.security;
 
-import static com.autenticacao.api.app.Constantes.Mensagens.ERRO_ENQUANTO_GERAVA_TOKEN_DE_ACESSO;
-import static com.autenticacao.api.app.Constantes.PERMISSOES.SEGREDO;
-import static com.autenticacao.api.app.Constantes.Util.GMT;
+import static com.autenticacao.api.app.Constantes.Permissoes.SEGREDO;
+import static com.autenticacao.api.app.Constantes.Util.ZONE_OFFSET_BR;
+import static com.autenticacao.api.app.util.enums.MensagemSistema.ERRO_ENQUANTO_GERAVA_TOKEN_DE_ACESSO;
 import static org.apache.naming.ResourceRef.AUTH;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 import org.springframework.stereotype.Service;
 
@@ -20,7 +19,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 @Service
 public class TokenService {
 
-  public String generateToken(Usuario usuario) {
+  public String generateToken(Usuario usuario) throws RuntimeException {
     try {
       Algorithm algorithm = Algorithm.HMAC256(SEGREDO);
 
@@ -31,7 +30,7 @@ public class TokenService {
           .sign(algorithm);
 
     } catch (JWTCreationException exception) {
-      throw new RuntimeException(ERRO_ENQUANTO_GERAVA_TOKEN_DE_ACESSO, exception);
+      throw new RuntimeException(ERRO_ENQUANTO_GERAVA_TOKEN_DE_ACESSO.getChave(), exception);
     }
   }
 
@@ -46,6 +45,6 @@ public class TokenService {
   }
 
   private Instant getExpirationDate() {
-    return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of(GMT));
+    return LocalDateTime.now().plusHours(2).toInstant(ZONE_OFFSET_BR);
   }
 }

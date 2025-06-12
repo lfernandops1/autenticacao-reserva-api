@@ -3,7 +3,7 @@ package com.autenticacao.api.app.domain.DTO.request;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.autenticacao.api.util.enums.UserRole;
+import com.autenticacao.api.app.util.enums.UserRole;
 
 import jakarta.validation.constraints.*;
 import lombok.Getter;

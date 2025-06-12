@@ -1,22 +1,22 @@
 package com.autenticacao.api.app.domain.entity;
 
-import static com.autenticacao.api.app.Constantes.ROTAS.USUARIO_ID;
-import static com.autenticacao.api.app.Constantes.TABELAS.TABELA_HISTORICO_USUARIO;
-import static com.autenticacao.api.app.Constantes.TABELA_AUTENTICACAO.DATA_HORA_ATUALIZACAO;
-import static com.autenticacao.api.app.Constantes.TABELA_HISTORICO_USUARIO.*;
+import static com.autenticacao.api.app.Constantes.ColunasAutenticacao.USUARIO_ID;
+import static com.autenticacao.api.app.Constantes.ColunasHistoricoUsuario.*;
+import static com.autenticacao.api.app.Constantes.ColunasUsuario.DATA_HORA_ATUALIZACAO;
+import static com.autenticacao.api.app.Constantes.Tabelas.HISTORICO_USUARIO;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.UuidGenerator;
 
-import com.autenticacao.api.util.enums.TipoMovimentacao;
+import com.autenticacao.api.app.util.enums.TipoMovimentacao;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = TABELA_HISTORICO_USUARIO)
+@Table(name = HISTORICO_USUARIO)
 @Getter
 @Setter
 @NoArgsConstructor

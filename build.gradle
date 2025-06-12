@@ -1,72 +1,110 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.0'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id 'com.diffplug.spotless' version '6.20.0'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.0'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.20.0'
 }
 
 group = 'com.autenticacao'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	// Spring Boot Starters principais para funcionalidades básicas
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'        // JPA e Hibernate para persistência
-	implementation 'org.springframework.boot:spring-boot-starter-security'         // Segurança (autenticação/autorização)
-	implementation 'org.springframework.boot:spring-boot-starter-validation'       // Validação de dados com Bean Validation (javax.validation)
-	implementation 'org.springframework.boot:spring-boot-starter-web'              // Desenvolvimento de APIs REST
+    // Spring Boot Starters principais para funcionalidades básicas
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // Segurança (autenticação/autorização)
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // Validação de dados com Bean Validation (javax.validation)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
-	// Dependência para recarga automática durante desenvolvimento
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'                // Hot reload
+    // Dependência para recarga automática durante desenvolvimento
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-	// Driver do banco de dados PostgreSQL em tempo de execução
-	runtimeOnly 'org.postgresql:postgresql'                                         // Driver JDBC para PostgreSQL
+    testImplementation 'com.h2database:h2'
 
-	// Testes - Spring Boot e segurança
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'          // Testes unitários e integração (JUnit, Mockito, etc)
-	testImplementation 'org.springframework.security:spring-security-test'          // Testes relacionados a segurança
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                     // Launcher do JUnit 5
+    // Driver do banco de dados PostgreSQL em tempo de execução
+    runtimeOnly 'org.postgresql:postgresql'
+    // Testes - Spring Boot e segurança
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Testes unitários e integração (JUnit, Mockito, etc)
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-	// JSON Web Token (JWT) para autenticação
-	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'                               // API JWT
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'                                 // Implementação JWT
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'                              // Suporte a JSON via Jackson para JWT
-	implementation 'org.springframework.security:spring-security-crypto'           // Criptografia para segurança (hash, encoding, etc)
+    // JSON Web Token (JWT) para autenticação
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    // Suporte a JSON via Jackson para JWT
+    implementation 'org.springframework.security:spring-security-crypto'
+    // Criptografia para segurança (hash, encoding, etc)
 
-	// Lombok - redução de boilerplate (getters, setters, construtores etc)
-	compileOnly 'org.projectlombok:lombok:1.18.30'
-	annotationProcessor 'org.projectlombok:lombok:1.18.30'
-	testCompileOnly 'org.projectlombok:lombok:1.18.30'
-	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    // Lombok - redução de boilerplate (getters, setters, construtores etc)
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-	// Outra biblioteca JWT (Auth0) - caso queira usar além do jjwt
-	implementation 'com.auth0:java-jwt:4.2.1'
+    // Outra biblioteca JWT (Auth0) - caso queira usar além do jjwt
+    implementation 'com.auth0:java-jwt:4.2.1'
 
-	// MapStruct - mapeamento automático entre DTOs e entidades
-	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+    // MapStruct - mapeamento automático entre DTOs e entidades
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
 
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+}
+
+tasks.register('fullRebuild') {
+    group = 'build'
+    description = 'Executa spotlessApply e build'
+
+    dependsOn 'spotlessApply'
+    dependsOn 'build'
+
+    tasks.findByName('build').mustRunAfter 'spotlessApply'
+
+    doLast {
+        println 'Full rebuild completo! Você pode rodar ./gradlew bootRun para iniciar a aplicação.'
+    }
 }
 
 spotless {
-	java {
-		googleJavaFormat('1.15.0')  // Usa o padrão Google Java Format (pode mudar para outro se preferir)
-		removeUnusedImports()
-		importOrder('java', 'javax', 'org', 'com', '')
-	}
+    java {
+        googleJavaFormat('1.15.0')  // Usa o padrão Google Java Format (pode mudar para outro se preferir)
+        removeUnusedImports()
+        importOrder('java', 'javax', 'org', 'com', '')
+    }
+}
+tasks.register('bootRunDev', JavaExec) {
+    group = 'application'
+    description = 'Run Spring Boot app with dev profile'
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('com.autenticacao.api.ApiApplication')
+    args = ['--spring.profiles.active=dev']
+}
+
+tasks.register('bootRunProd', JavaExec) {
+    group = 'application'
+    description = 'Run Spring Boot app with prod profile'
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('com.autenticacao.api.ApiApplication')
+
+    args = ['--spring.profiles.active=prod']
 }

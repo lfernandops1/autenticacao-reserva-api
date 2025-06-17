@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -44,6 +48,13 @@ class SenhaServiceImplTest {
     autenticacao = new Autenticacao();
     usuario.setAutenticacao(autenticacao);
     ReflectionTestUtils.setField(service, "validadeSenhaDias", validadeSenhaDias);
+
+    // mocka o usuário logado no contexto de segurança
+    UsernamePasswordAuthenticationToken authToken =
+        new UsernamePasswordAuthenticationToken(usuario, null, List.of());
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(authToken);
+    SecurityContextHolder.setContext(context);
   }
 
   // --- TESTES senhaExpirada ---
@@ -98,13 +109,14 @@ class SenhaServiceImplTest {
   @Test
   @DisplayName("Altera a senha com sucesso, codifica e atualiza data de modificação")
   void deveAlterarSenhaComSucesso() {
+    String senhaAntiga = "senhaAntiga123";
     String novaSenha = "novaSenha123";
     String senhaCodificada = "senhaCodificada";
 
     when(passwordEncoder.encode(novaSenha)).thenReturn(senhaCodificada);
     when(autenticacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-    assertDoesNotThrow(() -> service.alterarSenha(usuario, novaSenha));
+    assertDoesNotThrow(() -> service.alterarSenha(senhaAntiga, novaSenha));
 
     assertEquals(senhaCodificada, autenticacao.getSenha());
     assertNotNull(autenticacao.getDataHoraAtualizacao());
@@ -114,13 +126,16 @@ class SenhaServiceImplTest {
   @Test
   @DisplayName("Lança AutenticacaoApiRunTimeException quando erro ocorre ao salvar senha")
   void deveLancarExcecaoGenericaSeErroNoAlterarSenha() {
+    String senhaAntiga = "senhaAntiga123";
     String novaSenha = "novaSenha123";
+
     when(passwordEncoder.encode(novaSenha)).thenReturn("codificada");
     doThrow(new RuntimeException("Erro banco")).when(autenticacaoRepository).save(any());
 
     AutenticacaoApiRunTimeException ex =
         assertThrows(
-            AutenticacaoApiRunTimeException.class, () -> service.alterarSenha(usuario, novaSenha));
+            AutenticacaoApiRunTimeException.class,
+            () -> service.alterarSenha(senhaAntiga, novaSenha));
     assertTrue(ex.getMessage().contains(ERRO_ALTERAR_SENHA.getChave()));
   }
 }

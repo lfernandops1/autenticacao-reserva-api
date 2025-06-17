@@ -9,5 +9,5 @@ public interface SenhaService {
 
   boolean senhaExpirada(Autenticacao autenticacao);
 
-  void alterarSenha(Usuario usuario, String novaSenha);
+  void alterarSenha(String senhaAtual, String novaSenha);
 }

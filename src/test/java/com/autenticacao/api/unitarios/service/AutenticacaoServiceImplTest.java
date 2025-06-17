@@ -23,7 +23,7 @@ import org.springframework.security.core.Authentication;
 
 import com.autenticacao.api.app.config.security.TokenService;
 import com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider;
-import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
+import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequest;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
 import com.autenticacao.api.app.domain.entity.Usuario;
@@ -147,15 +147,15 @@ class AutenticacaoServiceImplTest {
   @Test
   @DisplayName("Deve alterar senha com sucesso para usuário autenticado")
   void alterarSenhaDeveAlterarSenhaQuandoUsuarioAutenticado() {
-    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
+    AlterarSenhaRequest dto = new AlterarSenhaRequest("novaSenha123", "novAsenha123");
 
     when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.of(USUARIO_ID));
     when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.of(usuario));
-    doNothing().when(senhaService).alterarSenha(usuario, dto.senha());
+    doNothing().when(senhaService).alterarSenha(dto.senhaAtual(), dto.novaSenha());
 
     autenticacaoService.alterarSenha(dto);
 
-    verify(senhaService).alterarSenha(usuario, dto.senha());
+    verify(senhaService).alterarSenha(dto.senhaAtual(), dto.novaSenha());
   }
 
   @Test
@@ -163,7 +163,7 @@ class AutenticacaoServiceImplTest {
   void alterarSenha_DeveLancarExcecaoQuandoUsuarioNaoAutenticado() {
     when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.empty());
 
-    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
+    AlterarSenhaRequest dto = new AlterarSenhaRequest("novaSenha123", "novAsenha123");
 
     AutenticacaoApiRunTimeException ex =
         assertThrows(
@@ -183,7 +183,7 @@ class AutenticacaoServiceImplTest {
     when(usuarioAutenticadoProvider.getIdUsuarioLogado()).thenReturn(Optional.of(USUARIO_ID));
     when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.empty());
 
-    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
+    AlterarSenhaRequest dto = new AlterarSenhaRequest("novaSenha123", "novAsenha123");
 
     AutenticacaoApiRunTimeException ex =
         assertThrows(
@@ -203,9 +203,9 @@ class AutenticacaoServiceImplTest {
     when(usuarioRepository.findById(USUARIO_ID)).thenReturn(Optional.of(usuario));
     doThrow(new RuntimeException("Erro inesperado"))
         .when(senhaService)
-        .alterarSenha(usuario, "novaSenha123");
+        .alterarSenha("senhaAtual", "novaSenha123");
 
-    AlterarSenhaRequestDTO dto = new AlterarSenhaRequestDTO("novaSenha123");
+    AlterarSenhaRequest dto = new AlterarSenhaRequest("novaSenha123", "novAsenha123");
 
     AutenticacaoApiRunTimeException ex =
         assertThrows(

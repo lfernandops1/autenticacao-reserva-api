@@ -40,8 +40,11 @@ public class Autenticacao {
   @Column(name = DATA_HORA_CRIACAO, nullable = false)
   private LocalDateTime dataHoraCriacao;
 
-  @Column(name = DATA_HORA_ATUALIZACAO, nullable = false)
+  @Column(name = DATA_HORA_ATUALIZACAO)
   private LocalDateTime dataHoraAtualizacao;
+
+  @Column(name = SENHA_ATUALIZACAO)
+  private LocalDateTime senhaAtualizacao;
 
   @Column(name = DATA_HORA_EXCLUSAO)
   private LocalDateTime dataHoraExclusao;

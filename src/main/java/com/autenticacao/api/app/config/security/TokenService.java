@@ -26,7 +26,7 @@ public class TokenService {
       return JWT.create()
           .withIssuer(AUTH)
           .withSubject(usuario.getUsername())
-          .withExpiresAt(getExpirationDate())
+          .withExpiresAt(generateExpirationDate())
           .sign(algorithm);
 
     } catch (JWTCreationException exception) {
@@ -44,7 +44,14 @@ public class TokenService {
     }
   }
 
-  private Instant getExpirationDate() {
+  // Gera data de expiração para novos tokens
+  private Instant generateExpirationDate() {
     return LocalDateTime.now().plusHours(2).toInstant(ZONE_OFFSET_BR);
+  }
+
+  // Extrai a data de expiração de um token já existente
+  public Instant getExpirationDate(String token) {
+    Algorithm algorithm = Algorithm.HMAC256(SEGREDO);
+    return JWT.require(algorithm).withIssuer(AUTH).build().verify(token).getExpiresAt().toInstant();
   }
 }

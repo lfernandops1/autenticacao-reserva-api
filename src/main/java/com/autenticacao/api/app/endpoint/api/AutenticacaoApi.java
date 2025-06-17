@@ -5,12 +5,9 @@ import static com.autenticacao.api.app.config.security.util.Roles.ADMIN_OR_SELF;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
-import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
+import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequest;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.request.RefreshTokenRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
@@ -46,5 +43,13 @@ public interface AutenticacaoApi {
   })
   @PreAuthorize(ADMIN_OR_SELF)
   @PutMapping(ALTERAR_SENHA)
-  ResponseEntity<Void> alterarSenha(@RequestBody @Valid AlterarSenhaRequestDTO alterarSenhaRequest);
+  ResponseEntity<Void> alterarSenha(@RequestBody @Valid AlterarSenhaRequest alterarSenhaRequest);
+
+  @Operation(summary = "Revoga um refresh token (logout manual)")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Refresh token removido com sucesso"),
+    @ApiResponse(responseCode = "400", description = "Token inválido ou ausente")
+  })
+  @DeleteMapping(REVOKE_REFRESH_TOKEN)
+  ResponseEntity<Void> revokeRefreshToken(@RequestParam("token") String token);
 }

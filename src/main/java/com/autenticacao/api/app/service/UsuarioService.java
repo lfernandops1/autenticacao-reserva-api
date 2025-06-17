@@ -1,6 +1,7 @@
 package com.autenticacao.api.app.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
@@ -17,6 +18,8 @@ public interface UsuarioService {
   void desativarUsuario(UUID id);
 
   UsuarioDetalhadoResponse buscarPorId(UUID id);
+
+  Optional<UsuarioResumoResponse> buscarPorEmail(String email);
 
   List<UsuarioResumoResponse> listarTodos();
 }

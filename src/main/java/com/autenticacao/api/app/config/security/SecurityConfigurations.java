@@ -35,6 +35,7 @@ public class SecurityConfigurations {
         .authorizeHttpRequests(
             authorize ->
                 authorize
+                    // Permite acesso público à documentação Swagger
                     .requestMatchers(
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
@@ -44,8 +45,28 @@ public class SecurityConfigurations {
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, API_AUTENTICAR + LOGIN)
                     .permitAll()
-                    .requestMatchers(API_USUARIOS + CRIAR)
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + CRIAR)
                     .permitAll()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + CRIAR_ADMIN)
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + REFRESH_TOKEN)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + ALTERAR_SENHA)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + DESATIVAR)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + DESATIVAR)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + LISTAR_TODOS)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + BUSCAR)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + ATUALIZAR_POR_ID)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.DELETE, API_AUTENTICAR + REVOKE_REFRESH_TOKEN)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.GET, API_USUARIOS + BUSCAR_POR_ID)
+                    .authenticated()
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

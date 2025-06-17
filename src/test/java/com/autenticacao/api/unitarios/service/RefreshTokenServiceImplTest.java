@@ -39,6 +39,7 @@ class RefreshTokenServiceImplTest {
   @BeforeEach
   void setUp() {
     // Configura validade do token para 7 dias
+    usuario = new Usuario();
     ReflectionTestUtils.setField(service, "validadeTokenMinutos", 10080L);
   }
 
@@ -46,14 +47,14 @@ class RefreshTokenServiceImplTest {
   @Test
   @DisplayName("Deve criar refresh token com sucesso")
   void deveCriarRefreshTokenComSucesso() {
-    String tokenGerado = "token123";
+    String tokenEsperado = "token123";
 
-    when(tokenGenerator.gerarToken()).thenReturn(tokenGerado);
+    when(tokenGenerator.gerarToken()).thenReturn(tokenEsperado);
     when(refreshTokenRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
     String resultado = service.createRefreshToken(usuario);
 
-    assertEquals(tokenGerado, resultado);
+    assertEquals(tokenEsperado, resultado);
     verify(refreshTokenRepository).save(any(RefreshToken.class));
   }
 

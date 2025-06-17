@@ -6,6 +6,7 @@ import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -53,6 +54,13 @@ public class UsuarioServiceImpl implements UsuarioService {
   public UsuarioDetalhadoResponse buscarPorId(UUID id) {
     return executarComandoComTratamentoErroComMensagem(
         () -> usuarioMapper.toDetalhado(obterUsuarioOuFalhar(id)),
+        ERRO_AO_BUSCAR_USUARIO.getChave());
+  }
+
+  @Override
+  public Optional<UsuarioResumoResponse> buscarPorEmail(String email) {
+    return executarComandoComTratamentoErroComMensagem(
+        () -> usuarioRepository.findByEmail(email).map(usuarioMapper::toResumo),
         ERRO_AO_BUSCAR_USUARIO.getChave());
   }
 
@@ -169,21 +177,17 @@ public class UsuarioServiceImpl implements UsuarioService {
   private Usuario aplicarAtualizacoesParciais(AtualizarUsuarioRequest request, Usuario usuario) {
     Usuario.UsuarioBuilder builder = usuario.toBuilder();
 
-    if (request.nome() != null && !request.nome().isBlank()) {
-      builder.nome(request.nome());
-    }
-    if (request.sobrenome() != null && !request.sobrenome().isBlank()) {
-      builder.sobrenome(request.sobrenome());
-    }
-    if (request.telefone() != null && !request.telefone().isBlank()) {
-      builder.telefone(request.telefone());
-    }
-    if (request.email() != null && !request.email().isBlank()) {
-      builder.email(request.email());
-    }
-    if (request.dataNascimento() != null) {
-      builder.dataNascimento(request.dataNascimento());
-    }
+    Optional.ofNullable(request.nome()).filter(s -> !s.isBlank()).ifPresent(builder::nome);
+
+    Optional.ofNullable(request.sobrenome())
+        .filter(s -> !s.isBlank())
+        .ifPresent(builder::sobrenome);
+
+    Optional.ofNullable(request.telefone()).filter(s -> !s.isBlank()).ifPresent(builder::telefone);
+
+    Optional.ofNullable(request.email()).filter(s -> !s.isBlank()).ifPresent(builder::email);
+
+    Optional.ofNullable(request.dataNascimento()).ifPresent(builder::dataNascimento);
 
     return builder.build();
   }

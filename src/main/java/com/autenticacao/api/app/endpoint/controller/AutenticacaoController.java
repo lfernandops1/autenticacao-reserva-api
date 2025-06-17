@@ -2,10 +2,11 @@ package com.autenticacao.api.app.endpoint.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.autenticacao.api.app.config.security.TokenService;
-import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
+import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequest;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.request.RefreshTokenRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
@@ -33,21 +34,30 @@ public class AutenticacaoController implements AutenticacaoApi {
 
   @Override
   public ResponseEntity<LoginResponseDTO> refreshToken(@Valid RefreshTokenRequestDTO request) {
-    String refreshToken = request.refreshToken();
+    String oldRefreshToken = request.refreshToken();
 
-    if (!refreshTokenService.isValid(refreshToken)) {
+    if (!refreshTokenService.isValid(oldRefreshToken)) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
-    Usuario usuario = refreshTokenService.getUsuario(refreshToken);
+    String newRefreshToken = refreshTokenService.rotateRefreshToken(oldRefreshToken);
+
+    Usuario usuario = refreshTokenService.getUsuario(newRefreshToken);
+
     String newAccessToken = tokenService.generateToken(usuario);
 
-    return ResponseEntity.ok(new LoginResponseDTO(newAccessToken, refreshToken));
+    return ResponseEntity.ok(new LoginResponseDTO(newAccessToken, newRefreshToken));
   }
 
   @Override
-  public ResponseEntity<Void> alterarSenha(@Valid AlterarSenhaRequestDTO alterarSenhaRequest) {
+  public ResponseEntity<Void> alterarSenha(@Valid AlterarSenhaRequest alterarSenhaRequest) {
     autenticacaoService.alterarSenha(alterarSenhaRequest);
+    return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<Void> revokeRefreshToken(@RequestParam("token") String token) {
+    refreshTokenService.deleteByToken(token);
     return ResponseEntity.noContent().build();
   }
 }

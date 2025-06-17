@@ -63,12 +63,29 @@ dependencies {
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
 
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Testcontainers
+    testImplementation 'org.testcontainers:testcontainers:1.19.7'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.7'
+    testImplementation 'org.testcontainers:postgresql:1.19.7'
+
+
 }
 
 tasks.named('test') {
     useJUnitPlatform()
 }
 
+
+tasks.register('fullRebuildAndRun') {
+    group = 'build'
+    description = 'Executa full rebuild e inicia a aplicação'
+
+    finalizedBy 'clearConsole'
+    finalizedBy 'bootRunDev'
+
+}
 tasks.register('fullRebuild') {
     group = 'build'
     description = 'Executa spotlessApply e build'
@@ -77,6 +94,7 @@ tasks.register('fullRebuild') {
     dependsOn 'build'
 
     tasks.findByName('build').mustRunAfter 'spotlessApply'
+
 
     doLast {
         println 'Full rebuild completo! Você pode rodar ./gradlew bootRun para iniciar a aplicação.'

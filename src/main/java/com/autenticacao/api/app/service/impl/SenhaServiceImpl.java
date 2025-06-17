@@ -1,5 +1,6 @@
 package com.autenticacao.api.app.service.impl;
 
+import static com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider.obterUsuarioLogado;
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
 import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
@@ -68,16 +69,16 @@ public class SenhaServiceImpl implements SenhaService {
    * Altera a senha do usuário e atualiza a data da última modificação. O método utiliza tratamento
    * centralizado para erros inesperados.
    *
-   * @param usuario Usuário que terá a senha alterada.
    * @param novaSenha Nova senha em texto plano que será codificada.
    */
   @Override
-  public void alterarSenha(Usuario usuario, String novaSenha) {
+  public void alterarSenha(String senhaAtual, String novaSenha) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          Autenticacao autenticacao = usuario.getAutenticacao();
+          Autenticacao autenticacao = obterUsuarioLogado().getAutenticacao();
           autenticacao.setSenha(passwordEncoder.encode(novaSenha));
           autenticacao.setDataHoraAtualizacao(LocalDateTime.now());
+          autenticacao.setSenhaAtualizacao(LocalDateTime.now());
           autenticacaoRepository.save(autenticacao);
           return null;
         },

@@ -10,12 +10,11 @@ public record AtualizarUsuarioRequest(
     String email,
     LocalDate dataNascimento,
     LocalDateTime dataHoraAtualizacao,
-    LocalDateTime senhaAtualizadaEm) {
+    Boolean ativo) {
 
   public AtualizarUsuarioRequest {
 
-    dataHoraAtualizacao = dataHoraAtualizacao != null ? dataHoraAtualizacao : LocalDateTime.now();
-    senhaAtualizadaEm = senhaAtualizadaEm != null ? senhaAtualizadaEm : LocalDateTime.now();
+    dataHoraAtualizacao = LocalDateTime.now();
   }
 
   public LocalDateTime dataHoraAtualizacao() {

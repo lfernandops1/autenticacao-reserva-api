@@ -19,7 +19,6 @@ public interface Constantes {
 
     ZoneOffset ZONE_OFFSET_BR = ZoneOffset.ofHours(-3);
 
-    String DE = "de";
     String ASTERISCO = "*";
     String BARRA_ALL = "/**";
 
@@ -72,6 +71,7 @@ public interface Constantes {
 
   interface Tabelas {
     String USUARIOS = "usuarios";
+    String TOKEN_BLACK_LIST = "token_black_list";
     String REFRESH_TOKEN = "refresh_token";
     String AUTENTICACOES = "autenticacoes";
     String HISTORICO_USUARIO = "historico_usuarios";
@@ -95,6 +95,7 @@ public interface Constantes {
     String SENHA = "senha";
     String DATA_HORA_CRIACAO = "data_hora_criacao";
     String DATA_HORA_ATUALIZACAO = "data_hora_atualizacao";
+    String SENHA_ATUALIZACAO = "senha_alterada_em";
     String DATA_HORA_EXCLUSAO = "data_hora_exclusao";
     String ATIVO = "ativo";
     String USUARIO = "usuario";
@@ -113,10 +114,12 @@ public interface Constantes {
     String LOGOUT = "/logout";
     String API_AUTENTICAR = "/api/autenticacao";
     String ALTERAR_SENHA = "/alterar-senha";
+    String REVOKE_REFRESH_TOKEN = "/revoke-refresh-token";
 
     // Usuários
     String LISTAR_TODOS = "/listar-todos";
     String CRIAR = "/criar";
+    String GET_USUARIO_LOGADO = "LOGADO";
     String CRIAR_ADMIN = "/criar-admin";
     String USUARIO = "/usuario";
     String FILTRAR_USUARIO = "/usuario/filtrar";

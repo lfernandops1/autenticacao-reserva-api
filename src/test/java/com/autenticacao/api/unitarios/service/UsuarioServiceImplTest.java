@@ -140,6 +140,7 @@ class UsuarioServiceImplTest {
             .email(atualizarRequest.email())
             .telefone(atualizarRequest.telefone())
             .dataNascimento(atualizarRequest.dataNascimento())
+            .ativo(atualizarRequest.ativo())
             .build();
 
     when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioAtualizado);
@@ -152,7 +153,7 @@ class UsuarioServiceImplTest {
             atualizarRequest.email(),
             atualizarRequest.telefone(),
             UserRole.USER,
-            true);
+            atualizarRequest.ativo());
 
     when(usuarioMapper.toDetalhado(usuarioAtualizado)).thenReturn(esperado);
 
@@ -242,7 +243,7 @@ class UsuarioServiceImplTest {
         "joao.atualizado@email.com",
         LocalDate.of(1991, 2, 2),
         LocalDateTime.now(),
-        LocalDateTime.now());
+        true);
   }
 
   private CadastroUsuarioRequest obterCadastroUsuarioRequest() {

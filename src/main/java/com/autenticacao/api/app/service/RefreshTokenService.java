@@ -10,5 +10,9 @@ public interface RefreshTokenService {
 
   Usuario getUsuario(String token) throws RefreshTokenInvalidoException;
 
+  void deleteByToken(String token);
+
+  String rotateRefreshToken(String oldToken);
+
   void deleteByUsuario(Usuario usuario);
 }

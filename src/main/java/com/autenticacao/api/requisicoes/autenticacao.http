@@ -1,36 +1,36 @@
 ### Cabeçalhos comuns
-@baseUrl = http://localhost:8080
-@token = <seu_token_aqui>
+@baseUrl = http://localhost:8095
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FvQGVtYWlsLmNvbSIsImlzcyI6ImF1dGgiLCJleHAiOjE3NDk3NjMwNzV9.NHlx3DnYPMEa6fx_yLRitNSQMdhKetYHxkIp7cFgzO4
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 ### Login do usuário
-POST {{baseUrl}}/autenticar/login
+POST {{baseUrl}}/api/autenticacao/login
 Content-Type: application/json
 
 {
-  "email": "usuario@email.com",
+  "email": "joao@email.com",
   "senha": "SenhaForte@123"
 }
 
 ###
 
 ### Renovar token usando refresh token
-POST {{baseUrl}}/autenticar/refresh-token
+POST {{baseUrl}}/api/autenticacao/refresh-token
 Content-Type: application/json
 
 {
-  "refreshToken": "seu_refresh_token_aqui"
+  "refreshToken": "mxibyeNsnII0RtLNc9gbrC8-QMKK333S48nSh97soB8"
 }
 
 ###
 
 ### Alterar senha do usuário autenticado
-PUT {{baseUrl}}/autenticar/alterar-senha
+PUT {{baseUrl}}/api/autenticacao/alterar-senha
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "senhaAtual": "SenhaForte@123",
-  "novaSenha": "NovaSenhaForte@456"
+  "senhaAtual": "NovaSenhaForte@456",
+  "novaSenha": "NovaSenhaForte@4567"
 }

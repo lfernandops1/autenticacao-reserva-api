@@ -15,16 +15,19 @@ import org.springframework.stereotype.Service;
 
 import com.autenticacao.api.app.config.security.TokenService;
 import com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider;
-import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequestDTO;
+import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequest;
 import com.autenticacao.api.app.domain.DTO.request.LoginUsuarioRequestDTO;
 import com.autenticacao.api.app.domain.DTO.response.LoginResponseDTO;
+import com.autenticacao.api.app.domain.entity.TokenBlacklist;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.exception.UsuarioNaoAutenticadoException;
 import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
+import com.autenticacao.api.app.repository.TokenBlacklistRepository;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.AutenticacaoService;
 import com.autenticacao.api.app.service.SenhaService;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -42,6 +45,7 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
   private final TentativaLoginServiceImpl tentativaLoginService;
   private final @Lazy AuthenticationManager authenticationManager;
   private final UsuarioAutenticadoProvider usuarioAutenticadoProvider;
+  private final TokenBlacklistRepository tokenBlacklistRepository;
   private static final Logger logger = LoggerFactory.getLogger(AutenticacaoServiceImpl.class);
 
   /**
@@ -92,7 +96,7 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
    * @throws RuntimeException para outros erros inesperados durante a alteração de senha.
    */
   @Override
-  public void alterarSenha(AlterarSenhaRequestDTO requestDTO) {
+  public void alterarSenha(AlterarSenhaRequest requestDTO) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
           UUID idUsuario =
@@ -107,7 +111,7 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
                   .orElseThrow(
                       () -> new UsuarioNaoEncontradoException(USUARIO_NAO_ENCONTRADO.getChave()));
 
-          senhaService.alterarSenha(usuario, requestDTO.senha());
+          senhaService.alterarSenha(requestDTO.senhaAtual(), requestDTO.novaSenha());
           logger.info("Senha alterada com sucesso para usuário: {}", usuario.getEmail());
 
           return null;
@@ -139,5 +143,15 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
     var authToken = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
     var authentication = authenticationManager.authenticate(authToken);
     return (Usuario) authentication.getPrincipal();
+  }
+
+  @Transactional
+  public void logout(String accessToken, String refreshToken) {
+
+    TokenBlacklist blacklist = new TokenBlacklist();
+    blacklist.setToken(accessToken);
+    blacklist.setExpiryDate(tokenService.getExpirationDate(accessToken));
+    tokenBlacklistRepository.save(blacklist);
+    refreshTokenService.deleteByToken(refreshToken);
   }
 }

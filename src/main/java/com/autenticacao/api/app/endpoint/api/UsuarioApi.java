@@ -1,14 +1,15 @@
 package com.autenticacao.api.app.endpoint.api;
 
 import static com.autenticacao.api.app.Constantes.Rotas.*;
-import static com.autenticacao.api.app.config.security.util.Roles.ADMIN;
 import static com.autenticacao.api.app.config.security.util.Roles.ADMIN_OR_SELF;
+import static com.autenticacao.api.app.config.security.util.Roles.SELF;
 
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
@@ -52,17 +53,6 @@ public interface UsuarioApi {
   ResponseEntity<Void> desativarUsuario(@PathVariable UUID id);
 
   @Operation(
-      summary = "Buscar usuário por ID",
-      description = "Recupera os dados detalhados de um usuário pelo seu UUID.")
-  @ApiResponses(
-      value = {
-        @ApiResponse(responseCode = "200", description = "Usuário encontrado"),
-        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
-      })
-  @GetMapping(ID)
-  ResponseEntity<UsuarioDetalhadoResponse> buscarPorId(@PathVariable UUID id);
-
-  @Operation(
       summary = "Listar todos os usuários",
       description = "Lista todos os usuários cadastrados. Apenas administradores podem acessar.")
   @ApiResponses(
@@ -70,7 +60,7 @@ public interface UsuarioApi {
         @ApiResponse(responseCode = "200", description = "Lista de usuários retornada com sucesso"),
         @ApiResponse(responseCode = "403", description = "Acesso negado")
       })
-  @PreAuthorize(ADMIN)
+  @PreAuthorize("hasRole('ADMIN')")
   @GetMapping(LISTAR_TODOS)
   ResponseEntity<List<UsuarioResumoResponse>> listarTodos();
 
@@ -97,4 +87,13 @@ public interface UsuarioApi {
   @PostMapping(CRIAR_ADMIN)
   ResponseEntity<UsuarioResumoResponse> criarUsuarioAdmin(
       @RequestBody @Valid CadastroUsuarioRequest request);
+
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "Lista de usuários retornada com sucesso"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado")
+      })
+  @PreAuthorize(SELF)
+  @GetMapping(GET_USUARIO_LOGADO)
+  ResponseEntity<UsuarioResumoResponse> getUsuarioLogado(Authentication authentication);
 }

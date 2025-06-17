@@ -31,4 +31,6 @@ public class RefreshToken {
 
   @Column(nullable = false)
   private LocalDateTime expiryDate;
+
+  private int refreshCount;
 }

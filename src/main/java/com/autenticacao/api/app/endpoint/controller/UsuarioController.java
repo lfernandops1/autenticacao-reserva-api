@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
@@ -42,12 +43,6 @@ public class UsuarioController implements UsuarioApi {
   }
 
   @Override
-  public ResponseEntity<UsuarioDetalhadoResponse> buscarPorId(UUID id) {
-    UsuarioDetalhadoResponse response = usuarioService.buscarPorId(id);
-    return ResponseEntity.ok(response);
-  }
-
-  @Override
   public ResponseEntity<List<UsuarioResumoResponse>> listarTodos() {
     List<UsuarioResumoResponse> usuarios = usuarioService.listarTodos();
     return ResponseEntity.ok(usuarios);
@@ -58,6 +53,16 @@ public class UsuarioController implements UsuarioApi {
     var requestComRole = request.withRole(role);
     var response = usuarioService.criarUsuario(requestComRole);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
+  }
+
+  @Override
+  public ResponseEntity<UsuarioResumoResponse> getUsuarioLogado(Authentication authentication) {
+    String email = authentication.getName();
+
+    return usuarioService
+        .buscarPorEmail(email)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
   @Override

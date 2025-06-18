@@ -1,0 +1,36 @@
+### Cabeçalhos comuns
+@baseUrl = http://localhost:8095
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FvQGVtYWlsLmNvbSIsImlzcyI6ImF1dGgiLCJleHAiOjE3NTAyOTUyNjN9.3QFCQbdhKSXe5tehB6JRHuSIY9mZ7U3l3fRIygcfHYE
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### Login do usuário
+POST {{baseUrl}}/api/autenticacao/login
+Content-Type: application/json
+
+{
+  "email": "joao@email.com",
+  "senha": "SenhaForte@123"
+}
+
+###
+
+### Renovar token usando refresh token
+POST {{baseUrl}}/api/autenticacao/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "mxibyeNsnII0RtLNc9gbrC8-QMKK333S48nSh97soB8"
+}
+
+###
+
+### Alterar senha do usuário autenticado
+PUT {{baseUrl}}/api/autenticacao/alterar-senha
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "senhaAtual": "SenhaForte@123",
+  "novaSenha": "NovaSenhaForte@4567"
+}

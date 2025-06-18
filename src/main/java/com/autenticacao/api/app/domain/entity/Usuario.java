@@ -1,13 +1,11 @@
 package com.autenticacao.api.app.domain.entity;
 
-import static com.autenticacao.api.app.Constantes.SCHEMA.SCHEMA_AUTENTICACAO;
-import static com.autenticacao.api.app.Constantes.TABELAS.TABELA_USUARIOS;
-import static com.autenticacao.api.app.Constantes.TABELA_AUTENTICACAO.DATA_HORA_EXCLUSAO;
-import static com.autenticacao.api.app.Constantes.TABELA_AUTENTICACAO.USUARIO;
-import static com.autenticacao.api.app.Constantes.TABELA_USUARIO.*;
+import static com.autenticacao.api.app.Constantes.ColunasAutenticacao.USUARIO;
+import static com.autenticacao.api.app.Constantes.ColunasUsuario.*;
+import static com.autenticacao.api.app.Constantes.Schema.AUTENTICACAO;
+import static com.autenticacao.api.app.Constantes.Tabelas.USUARIOS;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -16,19 +14,20 @@ import org.hibernate.annotations.UuidGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.autenticacao.api.util.enums.UserRole;
+import com.autenticacao.api.app.util.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
 @Entity
-@Table(name = TABELA_USUARIOS, schema = SCHEMA_AUTENTICACAO)
+@Table(name = USUARIOS, schema = AUTENTICACAO)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class Usuario implements UserDetails {
 
   @Id
@@ -57,16 +56,12 @@ public class Usuario implements UserDetails {
   private boolean ativo;
 
   @OneToOne(mappedBy = USUARIO, cascade = CascadeType.ALL)
+  @JsonManagedReference
   private Autenticacao autenticacao;
 
-  @Column(name = DATA_HORA_CRIACAO, nullable = false, updatable = false)
-  private LocalDateTime dataHoraCriacao;
-
-  @Column(name = DATA_HORA_ATUALIZACAO)
-  private LocalDateTime dataHoraAtualizacao;
-
-  @Column(name = DATA_HORA_EXCLUSAO)
-  private LocalDateTime dataHoraExclusao;
+  @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+  @JsonManagedReference
+  private List<HistoricoUsuario> historicoUsuario;
 
   @Column(name = DATA_NASCIMENTO)
   private LocalDate dataNascimento;

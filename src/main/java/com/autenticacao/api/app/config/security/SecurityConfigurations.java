@@ -1,7 +1,10 @@
 package com.autenticacao.api.app.config.security;
 
+import static com.autenticacao.api.app.Constantes.Rotas.*;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -16,11 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import lombok.RequiredArgsConstructor;
 
-import static com.autenticacao.api.app.Constantes.ROTAS.*;
-
+@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfigurations {
 
   private final SecurityFilter securityFilter;
@@ -34,20 +35,49 @@ public class SecurityConfigurations {
         .authorizeHttpRequests(
             authorize ->
                 authorize
+                    // Permite acesso público à documentação Swagger
+                    .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/swagger-resources/**",
+                        "/webjars/**")
+                    .permitAll()
                     .requestMatchers(HttpMethod.POST, API_AUTENTICAR + LOGIN)
                     .permitAll()
-                    .requestMatchers(API_USUARIOS + CRIAR)
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + CRIAR)
                     .permitAll()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + CRIAR_ADMIN)
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + REFRESH_TOKEN)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.PUT, API_AUTENTICAR + ALTERAR_SENHA)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + DESATIVAR)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + DESATIVAR)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_AUTENTICAR + LISTAR_TODOS)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, API_USUARIOS + BUSCAR)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.PUT, API_USUARIOS + ATUALIZAR_POR_ID)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.DELETE, API_AUTENTICAR + REVOKE_REFRESH_TOKEN)
+                    .authenticated()
+                    .requestMatchers(HttpMethod.GET, API_USUARIOS + BUSCAR_POR_ID)
+                    .authenticated()
                     .anyRequest()
-                    .permitAll())
+                    .authenticated())
         .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 
   @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+  @Lazy
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
       throws Exception {
-    return configuration.getAuthenticationManager();
+    return config.getAuthenticationManager();
   }
 
   @Bean

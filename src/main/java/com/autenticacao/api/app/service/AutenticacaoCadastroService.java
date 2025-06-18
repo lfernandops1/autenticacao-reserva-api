@@ -8,6 +8,8 @@ import com.autenticacao.api.app.domain.entity.Usuario;
 
 public interface AutenticacaoCadastroService {
   void criar(CadastroUsuarioRequest dto, Usuario usuario);
+
   void atualizar(AtualizarUsuarioRequest dto);
+
   void desativar(UUID usuarioId);
 }

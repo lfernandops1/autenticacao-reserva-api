@@ -157,7 +157,7 @@ class UsuarioControllerTest {
         LocalDate.of(1991, 2, 2),
         LocalDateTime.now(),
         true,
-            "SenhaForte123@");
+        "SenhaForte123@");
   }
 
   private CadastroUsuarioRequest obterCadastroUsuarioRequest() {

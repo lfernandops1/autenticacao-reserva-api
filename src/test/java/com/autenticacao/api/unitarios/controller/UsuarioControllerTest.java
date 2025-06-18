@@ -70,17 +70,6 @@ class UsuarioControllerTest {
   }
 
   @Test
-  @DisplayName("Desativa um usuário com sucesso")
-  void deveDesativarUsuarioComSucesso() {
-    doNothing().when(this.usuarioService).desativarUsuario(this.usuarioId);
-
-    ResponseEntity<Void> response = usuarioController.desativarUsuario(this.usuarioId);
-
-    assertThat(response.getStatusCodeValue()).isEqualTo(204);
-    verify(usuarioService).desativarUsuario(this.usuarioId);
-  }
-
-  @Test
   @DisplayName("Lista todos os usuários cadastrados")
   void deveListarTodosUsuarios() {
     List<UsuarioResumoResponse> lista = List.of(this.resumoResponse);
@@ -167,7 +156,8 @@ class UsuarioControllerTest {
         "joao.atualizado@email.com",
         LocalDate.of(1991, 2, 2),
         LocalDateTime.now(),
-        true);
+        true,
+            "SenhaForte123@");
   }
 
   private CadastroUsuarioRequest obterCadastroUsuarioRequest() {
@@ -179,9 +169,7 @@ class UsuarioControllerTest {
         "111222333",
         LocalDate.of(1995, 5, 5),
         true,
-        UserRole.USER,
-        LocalDateTime.now(),
-        LocalDateTime.now());
+        UserRole.USER);
   }
 
   private UsuarioDetalhadoResponse obterUsuarioDetalhadoResponse() {

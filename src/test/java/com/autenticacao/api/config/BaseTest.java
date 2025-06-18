@@ -19,7 +19,7 @@ public abstract class BaseTest {
 
   @BeforeAll
   public static void setup() {
-    postgres.start(); // Garante que o container suba antes de qualquer teste
+    postgres.start();
   }
 
   @DynamicPropertySource
@@ -29,6 +29,7 @@ public abstract class BaseTest {
     registry.add("spring.datasource.password", postgres::getPassword);
     registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
+    registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
     registry.add("spring.flyway.enabled", () -> false);
     registry.add("spring.liquibase.enabled", () -> false);
   }

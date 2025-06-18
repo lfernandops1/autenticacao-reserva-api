@@ -16,8 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
@@ -31,10 +30,10 @@ import com.autenticacao.api.app.exception.ValidacaoNotFoundException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
 import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 import com.autenticacao.api.app.service.HistoricoUsuarioService;
-import com.autenticacao.api.app.service.impl.UsuarioServiceImpl;
 import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
 import com.autenticacao.api.app.util.enums.TipoMovimentacao;
 import com.autenticacao.api.app.util.enums.UserRole;
+import com.autenticacao.api.app.service.impl.UsuarioServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceImplTest {
@@ -64,8 +63,6 @@ class UsuarioServiceImplTest {
     resumoResponse = obterUsuarioResumoResponse();
   }
 
-  // ======= BUSCAR USUÁRIO POR ID =======
-
   @Test
   @DisplayName("Deve buscar usuário por ID com sucesso")
   void deveBuscarUsuarioPorIdComSucesso() {
@@ -85,8 +82,6 @@ class UsuarioServiceImplTest {
     assertThrows(ValidacaoNotFoundException.class, () -> usuarioService.buscarPorId(usuarioId));
   }
 
-  // ======= CRIAR USUÁRIO =======
-
   @Test
   @DisplayName("Deve criar usuário com sucesso sem registrar histórico")
   void deveCriarUsuarioComSucessoSemRegistrarHistorico() {
@@ -96,11 +91,11 @@ class UsuarioServiceImplTest {
     when(usuarioRepository.save(usuario)).thenReturn(usuario);
     when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
 
-    UsuarioResumoResponse response = usuarioService.criarUsuario(cadastroRequest);
+    var response = usuarioService.criarUsuario(cadastroRequest);
 
     assertThat(response).isEqualTo(resumoResponse);
     verify(autenticacaoCadastroService).criar(cadastroRequest, usuario);
-    verify(historicoUsuarioService, never()).registrarAlteracaoUsuario(any(), any(), any());
+    verify(historicoUsuarioService).registrarHistoricoCompleto(null, usuario);
   }
 
   @Test
@@ -109,7 +104,7 @@ class UsuarioServiceImplTest {
     when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.of(usuario));
 
     ValidacaoException ex =
-        assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
+            assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
     assertThat(ex.getMessage()).contains(EMAIL_JA_CADASTRADO.getChave());
   }
 
@@ -117,15 +112,12 @@ class UsuarioServiceImplTest {
   @DisplayName("Deve lançar exceção ao tentar criar usuário com telefone duplicado")
   void deveLancarExcecaoAoCriarUsuarioComTelefoneDuplicado() {
     when(usuarioRepository.findByEmail(cadastroRequest.email())).thenReturn(Optional.empty());
-    when(usuarioRepository.findByTelefone(cadastroRequest.telefone()))
-        .thenReturn(Optional.of(usuario));
+    when(usuarioRepository.findByTelefone(cadastroRequest.telefone())).thenReturn(Optional.of(usuario));
 
     ValidacaoException ex =
-        assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
+            assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
     assertThat(ex.getMessage()).contains(TELEFONE_JA_CADASTRADO.getChave());
   }
-
-  // ======= ATUALIZAR USUÁRIO =======
 
   @Test
   @DisplayName("Deve atualizar usuário e registrar histórico de alteração")
@@ -134,37 +126,36 @@ class UsuarioServiceImplTest {
     doNothing().when(usuarioValidator).validarFormatoEmailETelefone(atualizarRequest);
 
     Usuario usuarioAtualizado =
-        usuario.toBuilder()
-            .nome(atualizarRequest.nome())
-            .sobrenome(atualizarRequest.sobrenome())
-            .email(atualizarRequest.email())
-            .telefone(atualizarRequest.telefone())
-            .dataNascimento(atualizarRequest.dataNascimento())
-            .ativo(atualizarRequest.ativo())
-            .build();
+            usuario.toBuilder()
+                    .nome(atualizarRequest.nome())
+                    .sobrenome(atualizarRequest.sobrenome())
+                    .email(atualizarRequest.email())
+                    .telefone(atualizarRequest.telefone())
+                    .dataNascimento(atualizarRequest.dataNascimento())
+                    .ativo(atualizarRequest.ativo())
+                    .build();
 
     when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioAtualizado);
 
     UsuarioDetalhadoResponse esperado =
-        new UsuarioDetalhadoResponse(
-            usuarioId,
-            atualizarRequest.nome(),
-            atualizarRequest.sobrenome(),
-            atualizarRequest.email(),
-            atualizarRequest.telefone(),
-            UserRole.USER,
-            atualizarRequest.ativo());
+            new UsuarioDetalhadoResponse(
+                    usuarioId,
+                    atualizarRequest.nome(),
+                    atualizarRequest.sobrenome(),
+                    atualizarRequest.email(),
+                    atualizarRequest.telefone(),
+                    UserRole.USER,
+                    atualizarRequest.ativo());
 
     when(usuarioMapper.toDetalhado(usuarioAtualizado)).thenReturn(esperado);
 
     UsuarioDetalhadoResponse response =
-        usuarioService.atualizarUsuario(usuarioId, atualizarRequest);
+            usuarioService.atualizarUsuario(usuarioId, atualizarRequest);
 
     assertThat(response).isEqualTo(esperado);
 
     verify(historicoUsuarioService)
-        .registrarAlteracaoUsuario(
-            any(Usuario.class), nullable(Usuario.class), eq(TipoMovimentacao.ATUALIZACAO_DADOS));
+            .registrarHistoricoCompleto(any(Usuario.class), any(Usuario.class));
   }
 
   @Test
@@ -173,39 +164,9 @@ class UsuarioServiceImplTest {
     when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
 
     assertThrows(
-        ValidacaoNotFoundException.class,
-        () -> usuarioService.atualizarUsuario(usuarioId, atualizarRequest));
+            ValidacaoNotFoundException.class,
+            () -> usuarioService.atualizarUsuario(usuarioId, atualizarRequest));
   }
-
-  // ======= DESATIVAR USUÁRIO =======
-
-  @Test
-  @DisplayName("Deve desativar usuário e registrar histórico")
-  void deveDesativarUsuarioERegistrarHistorico() {
-    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-    when(usuarioRepository.save(usuario)).thenReturn(usuario);
-    doNothing().when(autenticacaoCadastroService).desativar(usuarioId);
-
-    usuarioService.desativarUsuario(usuarioId);
-
-    assertThat(usuario.isAtivo()).isFalse();
-    assertThat(usuario.getDataHoraExclusao()).isNotNull();
-
-    verify(autenticacaoCadastroService).desativar(usuarioId);
-    verify(historicoUsuarioService)
-        .registrarAlteracaoUsuario(eq(usuario), any(), eq(TipoMovimentacao.DESATIVACAO));
-  }
-
-  @Test
-  @DisplayName("Deve lançar exceção ao tentar desativar usuário inexistente")
-  void deveLancarExcecaoAoDesativarUsuarioInexistente() {
-    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
-
-    assertThrows(
-        ValidacaoNotFoundException.class, () -> usuarioService.desativarUsuario(usuarioId));
-  }
-
-  // ======= LISTAR TODOS OS USUÁRIOS =======
 
   @Test
   @DisplayName("Deve listar todos os usuários")
@@ -221,52 +182,50 @@ class UsuarioServiceImplTest {
     assertThat(resultado).isEqualTo(resumos);
   }
 
-  // ======= MÉTODOS AUXILIARES =======
+  // Auxiliares
 
   private Usuario obterUsuario() {
     return Usuario.builder()
-        .id(usuarioId)
-        .nome("João")
-        .sobrenome("Silva")
-        .email("joao.silva@email.com")
-        .telefone("123456789")
-        .ativo(true)
-        .dataNascimento(LocalDate.of(1990, 1, 1))
-        .build();
+            .id(usuarioId)
+            .nome("João")
+            .sobrenome("Silva")
+            .email("joao.silva@email.com")
+            .telefone("123456789")
+            .ativo(true)
+            .dataNascimento(LocalDate.of(1990, 1, 1))
+            .build();
   }
 
   private AtualizarUsuarioRequest obterAtualizarUsuarioRequest() {
     return new AtualizarUsuarioRequest(
-        "João Atualizado",
-        "Silva Atualizado",
-        "987654321",
-        "joao.atualizado@email.com",
-        LocalDate.of(1991, 2, 2),
-        LocalDateTime.now(),
-        true);
+            "João Atualizado",
+            "Silva Atualizado",
+            "987654321",
+            "joao.atualizado@email.com",
+            LocalDate.of(1991, 2, 2),
+            LocalDateTime.now(),
+            true, "SenhaForte123@");
   }
 
   private CadastroUsuarioRequest obterCadastroUsuarioRequest() {
     return new CadastroUsuarioRequest(
-        "Maria",
-        "Fernandes",
-        "maria@email.com",
-        "senhaSegura123",
-        "111222333",
-        LocalDate.of(1995, 5, 5),
-        true,
-        UserRole.USER,
-        LocalDateTime.now(),
-        LocalDateTime.now());
+            "Maria",
+            "Fernandes",
+            "maria@email.com",
+            "senhaSegura123",
+            "111222333",
+            LocalDate.of(1995, 5, 5),
+            true,
+            UserRole.USER);
   }
 
   private UsuarioDetalhadoResponse obterUsuarioDetalhadoResponse() {
     return new UsuarioDetalhadoResponse(
-        usuarioId, "João", "Silva", "joao.silva@email.com", "123456789", UserRole.USER, true);
+            usuarioId, "João", "Silva", "joao.silva@email.com", "123456789", UserRole.USER, true);
   }
 
   private UsuarioResumoResponse obterUsuarioResumoResponse() {
     return new UsuarioResumoResponse(
-        usuarioId, "Maria Fernandes", "maria@email.com", "111222333", true);
+            usuarioId, "Maria Fernandes", "maria@email.com", "111222333", true);
   }
 }

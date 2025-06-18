@@ -1,13 +1,11 @@
 package com.autenticacao.api.app.domain.entity;
 
-import static com.autenticacao.api.app.Constantes.ColunasAutenticacao.DATA_HORA_EXCLUSAO;
 import static com.autenticacao.api.app.Constantes.ColunasAutenticacao.USUARIO;
 import static com.autenticacao.api.app.Constantes.ColunasUsuario.*;
 import static com.autenticacao.api.app.Constantes.Schema.AUTENTICACAO;
 import static com.autenticacao.api.app.Constantes.Tabelas.USUARIOS;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -61,20 +59,12 @@ public class Usuario implements UserDetails {
   @JsonManagedReference
   private Autenticacao autenticacao;
 
-  @Column(name = DATA_HORA_CRIACAO, nullable = false, updatable = false)
-  private LocalDateTime dataHoraCriacao;
-
-  @Column(name = DATA_HORA_ATUALIZACAO)
-  private LocalDateTime dataHoraAtualizacao;
-
-  @Column(name = DATA_HORA_EXCLUSAO)
-  private LocalDateTime dataHoraExclusao;
+  @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+  @JsonManagedReference
+  private List<HistoricoUsuario> historicoUsuario;
 
   @Column(name = DATA_NASCIMENTO)
   private LocalDate dataNascimento;
-
-  private int tentativasFalhas;
-  private LocalDateTime bloqueadoAte;
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {

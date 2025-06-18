@@ -1,7 +1,6 @@
 package com.autenticacao.api.app.domain.DTO.request;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import com.autenticacao.api.app.util.enums.UserRole;
 
@@ -22,14 +21,10 @@ public record CadastroUsuarioRequest(
     @NotBlank(message = "Telefone é obrigatório") String telefone,
     @NotNull(message = "Data de nascimento não pode ser nula") LocalDate dataNascimento,
     @Getter Boolean ativo,
-    UserRole role,
-    LocalDateTime dataHoraCriacao,
-    LocalDateTime senhaAtualizadaEm) {
+    UserRole role) {
 
   public CadastroUsuarioRequest {
     ativo = ativo != null ? ativo : true;
-    dataHoraCriacao = dataHoraCriacao != null ? dataHoraCriacao : LocalDateTime.now();
-    senhaAtualizadaEm = senhaAtualizadaEm != null ? senhaAtualizadaEm : LocalDateTime.now();
   }
 
   public Boolean ativo() {
@@ -40,25 +35,8 @@ public record CadastroUsuarioRequest(
     return role;
   }
 
-  public LocalDateTime dataHoraCriacao() {
-    return dataHoraCriacao;
-  }
-
-  public LocalDateTime senhaAtualizadaEm() {
-    return senhaAtualizadaEm;
-  }
-
   public CadastroUsuarioRequest withRole(UserRole novaRole) {
     return new CadastroUsuarioRequest(
-        nome,
-        sobrenome,
-        email,
-        senha,
-        telefone,
-        dataNascimento,
-        ativo,
-        novaRole,
-        dataHoraCriacao,
-        senhaAtualizadaEm);
+        nome, sobrenome, email, senha, telefone, dataNascimento, ativo, novaRole);
   }
 }

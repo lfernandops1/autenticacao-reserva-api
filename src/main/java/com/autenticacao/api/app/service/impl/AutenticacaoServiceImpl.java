@@ -68,17 +68,20 @@ public class AutenticacaoServiceImpl implements AutenticacaoService {
 
           try {
             Usuario autenticado = autenticarUsuario(dto);
+
             tentativaLoginService.resetarTentativas(usuario);
             senhaService.validarSenhaExpirada(autenticado);
 
             logger.info("Usuário autenticado com sucesso: {}", autenticado.getEmail());
 
-            return new LoginResponseDTO(
-                tokenService.generateToken(autenticado),
-                refreshTokenService.createRefreshToken(autenticado));
+            String accessToken = tokenService.generateToken(autenticado);
+            String refreshToken = refreshTokenService.createRefreshToken(autenticado);
+
+            return new LoginResponseDTO(accessToken, refreshToken);
 
           } catch (BadCredentialsException e) {
             tentativaLoginService.registrarFalha(usuario);
+
             logger.warn("Falha de autenticação para o email: {}", dto.email());
             throw e;
           }

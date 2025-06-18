@@ -1,6 +1,6 @@
 ### Cabeçalhos comuns
 @baseUrl = http://localhost:8095
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FvQGVtYWlsLmNvbSIsImlzcyI6ImF1dGgiLCJleHAiOjE3NDk3NjMwNzV9.NHlx3DnYPMEa6fx_yLRitNSQMdhKetYHxkIp7cFgzO4
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FvQGVtYWlsLmNvbSIsImlzcyI6ImF1dGgiLCJleHAiOjE3NTAyOTUyNjN9.3QFCQbdhKSXe5tehB6JRHuSIY9mZ7U3l3fRIygcfHYE
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -31,6 +31,6 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "senhaAtual": "NovaSenhaForte@456",
+  "senhaAtual": "SenhaForte@123",
   "novaSenha": "NovaSenhaForte@4567"
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -25,19 +26,23 @@ import com.autenticacao.api.app.repository.HistoricoUsuarioRepository;
 import com.autenticacao.api.app.service.UsuarioComparadorService;
 import com.autenticacao.api.app.service.impl.HistoricoUsuarioServiceImpl;
 import com.autenticacao.api.app.util.enums.TipoMovimentacao;
+import com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider;
 
 @ExtendWith(MockitoExtension.class)
 class HistoricoUsuarioServiceImplTest {
 
-  @InjectMocks private HistoricoUsuarioServiceImpl historicoService;
+  @InjectMocks
+  private HistoricoUsuarioServiceImpl historicoService;
 
-  @Mock private HistoricoUsuarioRepository historicoRepository;
+  @Mock
+  private HistoricoUsuarioRepository historicoRepository;
 
   @Mock
   @Qualifier("usuarioCloneMapperImpl")
   private UsuarioCloneMapper cloneMapper;
 
-  @Mock private UsuarioComparadorService usuarioComparadorService;
+  @Mock
+  private UsuarioComparadorService usuarioComparadorService;
 
   private Usuario usuarioAntes;
   private Usuario usuarioResponsavel;
@@ -47,69 +52,70 @@ class HistoricoUsuarioServiceImplTest {
   @BeforeEach
   void setup() {
     usuarioAntes =
-        Usuario.builder()
-            .id(UUID.randomUUID())
-            .nome("João")
-            .sobrenome("Silva")
-            .email("joao@email.com")
-            .telefone("123456789")
-            .dataNascimento(LocalDate.of(1990, 1, 1))
-            .ativo(true)
-            .build();
+            Usuario.builder()
+                    .id(UUID.randomUUID())
+                    .nome("João")
+                    .sobrenome("Silva")
+                    .email("joao@email.com")
+                    .telefone("123456789")
+                    .dataNascimento(LocalDate.of(1990, 1, 1))
+                    .ativo(true)
+                    .build();
 
     usuarioResponsavel =
-        Usuario.builder().id(UUID.randomUUID()).nome("Admin").email("admin@email.com").build();
+            Usuario.builder()
+                    .id(UUID.randomUUID())
+                    .nome("Admin")
+                    .email("admin@email.com")
+                    .build();
 
     cloneUsuario = usuarioAntes.toBuilder().build();
   }
 
-  // ========== REGISTRAR ALTERAÇÃO - sucesso ==========
   @Test
   @DisplayName("Deve registrar histórico de alteração do usuário com sucesso")
   void deveRegistrarHistoricoAlteracaoUsuarioComSucesso() {
-    // Configura mocks para cópia e comparação
     when(cloneMapper.copy(usuarioAntes)).thenReturn(cloneUsuario);
-    when(usuarioComparadorService.extrairDiferencas(cloneUsuario, usuarioAntes))
-        .thenReturn(camposDiferenca);
+    when(usuarioComparadorService.extrairDiferencas(cloneUsuario, cloneUsuario))
+            .thenReturn(camposDiferenca);
 
-    // Executa método que deve salvar histórico
-    historicoService.registrarAlteracaoUsuario(
-        usuarioAntes, usuarioResponsavel, TipoMovimentacao.ATUALIZACAO_DADOS);
+    try (MockedStatic<UsuarioAutenticadoProvider> mockedStatic =
+                 mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuarioResponsavel);
 
-    // Captura o objeto salvo para verificar os dados
-    ArgumentCaptor<HistoricoUsuario> captor = ArgumentCaptor.forClass(HistoricoUsuario.class);
-    verify(historicoRepository).save(captor.capture());
+      historicoService.registrarHistoricoCompleto(usuarioAntes, cloneUsuario);
 
-    HistoricoUsuario salvo = captor.getValue();
-    assertThat(salvo.getUsuario()).isEqualTo(usuarioAntes);
-    assertThat(salvo.getUsuarioResponsavel()).isEqualTo(usuarioResponsavel);
-    assertThat(salvo.getTipoAlteracao()).isEqualTo(TipoMovimentacao.ATUALIZACAO_DADOS);
-    assertThat(salvo.getCamposAlterados()).isEqualTo(camposDiferenca);
-    assertThat(salvo.getDataAlteracao()).isNotNull();
+      ArgumentCaptor<HistoricoUsuario> captor = ArgumentCaptor.forClass(HistoricoUsuario.class);
+      verify(historicoRepository).save(captor.capture());
+
+      HistoricoUsuario salvo = captor.getValue();
+      assertThat(salvo.getUsuario()).isEqualTo(cloneUsuario);
+      assertThat(salvo.getUsuarioResponsavel()).isEqualTo(usuarioResponsavel);
+      assertThat(salvo.getTipoAlteracao()).isEqualTo(TipoMovimentacao.ATUALIZACAO_DADOS);
+      assertThat(salvo.getCamposAlterados()).isEqualTo(camposDiferenca);
+      assertThat(salvo.getDataHoraAtualizacao()).isNotNull();
+    }
   }
 
-  // ========== REGISTRAR ALTERAÇÃO - falha ==========
   @Test
   @DisplayName("Deve lançar exceção ao falhar ao salvar histórico de alteração")
   void deveLancarExcecaoQuandoFalharAoRegistrarHistorico() {
-    // Configura mocks para cópia e comparação
     when(cloneMapper.copy(usuarioAntes)).thenReturn(cloneUsuario);
-    when(usuarioComparadorService.extrairDiferencas(cloneUsuario, usuarioAntes))
-        .thenReturn(camposDiferenca);
+    when(usuarioComparadorService.extrairDiferencas(cloneUsuario, cloneUsuario))
+            .thenReturn(camposDiferenca);
 
-    // Simula falha ao salvar histórico no repositório
     doThrow(new RuntimeException("Falha interna"))
-        .when(historicoRepository)
-        .save(any(HistoricoUsuario.class));
+            .when(historicoRepository)
+            .save(any(HistoricoUsuario.class));
 
-    // Verifica que exceção é lançada e mensagem esperada está presente
-    RuntimeException ex =
-        assertThrows(
-            RuntimeException.class,
-            () ->
-                historicoService.registrarAlteracaoUsuario(
-                    usuarioAntes, usuarioResponsavel, TipoMovimentacao.ATUALIZACAO_DADOS));
+    try (MockedStatic<UsuarioAutenticadoProvider> mockedStatic =
+                 mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuarioResponsavel);
 
-    assertThat(ex.getMessage()).contains(ERRO_REGISTRAR_HISTORICO_ALTERACAO_USUARIO.getChave());
+      RuntimeException ex =
+              assertThrows(RuntimeException.class, () -> historicoService.registrarHistoricoCompleto(usuarioAntes, cloneUsuario));
+
+      assertThat(ex.getMessage()).contains(ERRO_REGISTRAR_HISTORICO_ALTERACAO_USUARIO.getChave());
+    }
   }
 }

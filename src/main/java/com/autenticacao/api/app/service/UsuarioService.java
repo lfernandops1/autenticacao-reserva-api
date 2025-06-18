@@ -15,8 +15,6 @@ public interface UsuarioService {
 
   UsuarioDetalhadoResponse atualizarUsuario(UUID id, AtualizarUsuarioRequest request);
 
-  void desativarUsuario(UUID id);
-
   UsuarioDetalhadoResponse buscarPorId(UUID id);
 
   Optional<UsuarioResumoResponse> buscarPorEmail(String email);

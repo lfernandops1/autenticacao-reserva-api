@@ -35,18 +35,6 @@ Authorization: Bearer {{token}}
 
 ###
 
-### Desativar usuário
-PUT {{baseUrl}}/api/usuarios/8b8063df-0405-489e-a207-566e53ffdcdb/desativar
-Authorization: Bearer {{token}}
-
-###
-
-### Buscar usuário por ID
-GET {{baseUrl}}/api/usuarios/8b8063df-0405-489e-a207-566e53ffdcdb
-Authorization: Bearer {{token}}
-
-###
-
 ### Listar todos os usuários
 GET {{baseUrl}}/api/usuarios/listar-todos
 Authorization: Bearer {{token}}

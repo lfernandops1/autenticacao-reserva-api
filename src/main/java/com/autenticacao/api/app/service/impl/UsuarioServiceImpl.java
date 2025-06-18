@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 import org.springframework.stereotype.Service;
 
 import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
@@ -20,10 +19,12 @@ import com.autenticacao.api.app.domain.mapper.UsuarioMapper;
 import com.autenticacao.api.app.exception.ValidacaoException;
 import com.autenticacao.api.app.exception.ValidacaoNotFoundException;
 import com.autenticacao.api.app.repository.UsuarioRepository;
+import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 import com.autenticacao.api.app.service.HistoricoUsuarioService;
 import com.autenticacao.api.app.service.UsuarioService;
 import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
 import com.autenticacao.api.app.util.enums.MensagemSistema;
+import com.autenticacao.api.app.util.enums.UserRole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -110,8 +111,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     autenticacaoCadastroService.atualizar(request);
 
-    historicoUsuarioService.registrarHistoricoCompleto(
-        usuario, usuarioAtualizado);
+    historicoUsuarioService.registrarHistoricoCompleto(usuario, usuarioAtualizado);
 
     Usuario salvo = salvarUsuario(usuarioAtualizado);
 
@@ -125,9 +125,12 @@ public class UsuarioServiceImpl implements UsuarioService {
    */
   @Override
   public List<UsuarioResumoResponse> listarTodos() {
+    var usuarioLogado = obterUsuarioLogado();
+    if (usuarioLogado == null || !usuarioLogado.getRole().equals(UserRole.ADMIN)) {
+      throw new ValidacaoException(ACESSO_NEGADO);
+    }
     return usuarioRepository.findAll().stream().map(usuarioMapper::toResumo).toList();
   }
-
   /*
    * ====================
    * MÉTODOS PRIVADOS

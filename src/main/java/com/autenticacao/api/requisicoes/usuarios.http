@@ -1,6 +1,6 @@
 ### Cabeçalhos comuns
-@baseUrl = http://localhost:8090
-@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FvQGVtYWlsLmNvbSIsImlzcyI6ImF1dGgiLCJleHAiOjE3NDk3NjI1MDF9.iEIxvpwj9vpeDIw2WMifGgGIUu06eQX146zyDsmE-H8
+@baseUrl = http://localhost:8095
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2FvQGVtYWlsLmNvbSIsImlzcyI6ImF1dGgiLCJleHAiOjE3NTAyOTY0NjR9.dMoHyZ9Jnszf42uIHNdyswdBVECdNVrpzAdNKJGCgdI
   Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -35,31 +35,20 @@ Authorization: Bearer {{token}}
 
 ###
 
-### Desativar usuário
-PUT {{baseUrl}}/api/usuarios/8b8063df-0405-489e-a207-566e53ffdcdb/desativar
-Authorization: Bearer {{token}}
-
-###
-
-### Buscar usuário por ID
-GET {{baseUrl}}/api/usuarios/8b8063df-0405-489e-a207-566e53ffdcdb
-Authorization: Bearer {{token}}
-
-###
-
 ### Listar todos os usuários
 GET {{baseUrl}}/api/usuarios/listar-todos
 Authorization: Bearer {{token}}
 
 
 ### Atualizar usuário por ID
-PUT {{baseUrl}}/api/usuarios/atualizar/60ea0f8e-7a1d-4dc9-b750-ddf018480df6
+PUT {{baseUrl}}/api/usuarios/atualizar/844fb8e3-c7ce-41b2-8e0b-21e00f6d00c6
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "nome": "João Atualizado",
-  "sobrenome": "Silva Atualizado",
-  "telefone": "11987654321",
-  "dataNascimento": "1990-05-05"
+  "nome": "João Atualizado 2",
+  "sobrenome": "Silva Atualizado 2",
+  "telefone": "11987654323",
+  "email": "teste33@gmail.com",
+  "dataNascimento": "1990-05-06"
 }

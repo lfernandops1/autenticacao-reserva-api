@@ -51,6 +51,8 @@ public enum MensagemSistema {
   ERRO_RESETAR_TENTATIVAS_LOGIN(-42, "erro.resetar.tentativas.login"),
   CONTA_BLOQUEADA(-43, "conta.bloqueada"),
   EMAIL_OU_SENHA_INVALIDOS(-44, "email.ou.senha.invalidos"),
+  SENHA_ATUAL_INCORRETA(-45, "senha.atual.incorreta"),
+  ACESSO_NEGADO(-46, "acesso.negado"),
   ERRO_INSPERADO(-998, "erro.inesperado"),
   NAO_IDENTIFICADO(-999, "erro.nao.identificado");
   private final int codigo;

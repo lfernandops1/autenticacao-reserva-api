@@ -6,7 +6,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +27,7 @@ import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
 import com.autenticacao.api.app.exception.AutenticacaoJaExistenteException;
 import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
+import com.autenticacao.api.app.service.HistoricoAutenticacaoService;
 import com.autenticacao.api.app.service.impl.AutenticacaoCadastroServiceImpl;
 import com.autenticacao.api.app.util.enums.UserRole;
 
@@ -37,7 +38,7 @@ class AutenticacaoCadastroServiceImplTest {
 
   @Mock private AutenticacaoRepository autenticacaoRepository;
   @Mock private PasswordEncoder passwordEncoder;
-
+  @Mock private HistoricoAutenticacaoService historicoAutenticacaoService;
   private Usuario usuario;
   private CadastroUsuarioRequest cadastroRequest;
   private Autenticacao autenticacaoExistente;
@@ -57,17 +58,13 @@ class AutenticacaoCadastroServiceImplTest {
             "999999999",
             LocalDate.of(1990, 1, 1),
             true,
-            UserRole.USER,
-            LocalDateTime.now(),
-            LocalDateTime.now());
+            UserRole.USER);
 
     autenticacaoExistente = new Autenticacao();
     autenticacaoExistente.setUsuario(usuario);
     autenticacaoExistente.setEmail("usuario@email.com");
     autenticacaoExistente.setSenha("hash");
     autenticacaoExistente.setAtivo(true);
-    autenticacaoExistente.setDataHoraCriacao(LocalDateTime.now());
-    autenticacaoExistente.setDataHoraAtualizacao(LocalDateTime.now());
   }
 
   // ======= TESTES criar() =======
@@ -113,9 +110,12 @@ class AutenticacaoCadastroServiceImplTest {
 
     service.desativar(usuarioId);
 
-    assertThat(autenticacaoExistente.getAtivo()).isFalse();
-    assertThat(autenticacaoExistente.getDataHoraExclusao()).isNotNull();
-    verify(autenticacaoRepository).save(autenticacaoExistente);
+    ArgumentCaptor<Autenticacao> captor = ArgumentCaptor.forClass(Autenticacao.class);
+    verify(autenticacaoRepository).save(captor.capture());
+
+    Autenticacao salvo = captor.getValue();
+
+    assertThat(salvo.getAtivo()).isFalse();
   }
 
   @Test

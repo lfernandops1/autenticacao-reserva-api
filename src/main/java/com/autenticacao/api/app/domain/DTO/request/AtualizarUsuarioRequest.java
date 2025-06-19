@@ -10,7 +10,8 @@ public record AtualizarUsuarioRequest(
     String email,
     LocalDate dataNascimento,
     LocalDateTime dataHoraAtualizacao,
-    Boolean ativo) {
+    Boolean ativo,
+    String senha) {
 
   public AtualizarUsuarioRequest {
 

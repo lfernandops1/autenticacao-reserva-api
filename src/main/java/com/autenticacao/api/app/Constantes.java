@@ -75,6 +75,8 @@ public interface Constantes {
     String REFRESH_TOKEN = "refresh_token";
     String AUTENTICACOES = "autenticacoes";
     String HISTORICO_USUARIO = "historico_usuarios";
+    String HISTORICO_AUTENTICACAO = "historico_autenticacoes";
+    String CONTROLE_ACESSO_USUARIO = "controle_acesso_usuario";
   }
 
   interface ColunasUsuario {
@@ -97,12 +99,18 @@ public interface Constantes {
     String DATA_HORA_ATUALIZACAO = "data_hora_atualizacao";
     String SENHA_ATUALIZACAO = "senha_alterada_em";
     String DATA_HORA_EXCLUSAO = "data_hora_exclusao";
+    String DATA_HORA_ALTERACAO_SENHA = "data_hora_alteracao_senha";
     String ATIVO = "ativo";
     String USUARIO = "usuario";
   }
 
   interface ColunasHistoricoUsuario {
     String TIPO_MOVIMENTACAO = "tipo_alteracao";
+    String USUARIO_RESPONSAVEL = "usuario_responsavel";
+    String CAMPOS_ALTERADOS = "campos_alterados";
+  }
+
+  interface ColunasHistoricoAutenticacao {
     String USUARIO_RESPONSAVEL = "usuario_responsavel";
     String CAMPOS_ALTERADOS = "campos_alterados";
   }

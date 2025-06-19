@@ -11,39 +11,35 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.autenticacao.api.app.domain.entity.Autenticacao;
+import com.autenticacao.api.app.domain.entity.HistoricoAutenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.exception.SenhaExpiradaException;
+import com.autenticacao.api.app.exception.ValidacaoException;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
+import com.autenticacao.api.app.repository.HistoricoAutenticacaoRepository;
 import com.autenticacao.api.app.service.SenhaService;
+import com.autenticacao.api.app.util.enums.TipoMovimentacao;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Implementação do serviço responsável por operações relacionadas à senha do usuário, incluindo
- * validação de expiração e alteração de senha, com tratamento centralizado de exceções.
- */
 @Service
 @RequiredArgsConstructor
 public class SenhaServiceImpl implements SenhaService {
 
   private final PasswordEncoder passwordEncoder;
   private final AutenticacaoRepository autenticacaoRepository;
+  private final HistoricoAutenticacaoRepository historicoAutenticacaoRepository;
 
   @Value("${seguranca.senha.validade-dias:90}")
   private long validadeSenhaDias;
 
-  /**
-   * Valida se a senha do usuário expirou, lançando exceção caso positivo. Aplica tratamento
-   * centralizado para garantir robustez.
-   *
-   * @param usuario Usuário cuja senha será validada.
-   * @throws SenhaExpiradaException se a senha do usuário estiver expirada.
-   */
   @Override
   public void validarSenhaExpirada(Usuario usuario) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          if (senhaExpirada(usuario.getAutenticacao())) {
+          LocalDateTime dataUltimaAtualizacao = buscarDataUltimaAtualizacaoSenha(usuario);
+          if (dataUltimaAtualizacao == null
+              || dataUltimaAtualizacao.plusDays(validadeSenhaDias).isBefore(LocalDateTime.now())) {
             throw new SenhaExpiradaException(SENHA_EXPIRADA.getChave());
           }
           return null;
@@ -51,37 +47,52 @@ public class SenhaServiceImpl implements SenhaService {
         ERRO_VALIDAR_EXPIRACAO_SENHA.getChave());
   }
 
-  /**
-   * Verifica se a senha do usuário está expirada com base na data de atualização da senha.
-   *
-   * @param autenticacao Entidade de autenticação contendo a data da última atualização da senha.
-   * @return true se a senha estiver expirada, false caso contrário.
-   */
-  @Override
-  public boolean senhaExpirada(Autenticacao autenticacao) {
-    return autenticacao
-        .getDataHoraAtualizacao()
-        .plusDays(validadeSenhaDias)
-        .isBefore(LocalDateTime.now());
-  }
-
-  /**
-   * Altera a senha do usuário e atualiza a data da última modificação. O método utiliza tratamento
-   * centralizado para erros inesperados.
-   *
-   * @param novaSenha Nova senha em texto plano que será codificada.
-   */
   @Override
   public void alterarSenha(String senhaAtual, String novaSenha) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          Autenticacao autenticacao = obterUsuarioLogado().getAutenticacao();
+          Usuario usuario = obterUsuarioLogado();
+          Autenticacao autenticacao = usuario.getAutenticacao();
+
+          validarSenhaAtual(senhaAtual, autenticacao);
+
           autenticacao.setSenha(passwordEncoder.encode(novaSenha));
-          autenticacao.setDataHoraAtualizacao(LocalDateTime.now());
-          autenticacao.setSenhaAtualizacao(LocalDateTime.now());
           autenticacaoRepository.save(autenticacao);
+
+          registrarHistoricoAlteracaoSenha(autenticacao);
+
           return null;
         },
         ERRO_ALTERAR_SENHA.getChave());
+  }
+
+  private void validarSenhaAtual(String senhaAtual, Autenticacao autenticacao) {
+    if (!passwordEncoder.matches(senhaAtual, autenticacao.getSenha())) {
+      throw new ValidacaoException(SENHA_ATUAL_INCORRETA);
+    }
+  }
+
+  private void registrarHistoricoAlteracaoSenha(Autenticacao autenticacao) {
+    HistoricoAutenticacao historico =
+        HistoricoAutenticacao.builder()
+            .autenticacao(autenticacao)
+            .tipoAlteracao(TipoMovimentacao.ATUALIZACAO_SENHA)
+            .dataAlteracao(LocalDateTime.now())
+            .camposAlterados("Senha alterada com sucesso")
+            .build();
+
+    historicoAutenticacaoRepository.save(historico);
+  }
+
+  private LocalDateTime buscarDataUltimaAtualizacaoSenha(Usuario usuario) {
+    return historicoAutenticacaoRepository
+        .findTopByUsuarioResponsavelOrderByDataHoraCriacaoDesc(usuario)
+        .map(HistoricoAutenticacao::getDataAlteracao)
+        .orElse(null);
+  }
+
+  @Override
+  public boolean senhaExpirada(Autenticacao autenticacao) {
+    throw new UnsupportedOperationException("Use validarSenhaExpirada com base no histórico.");
   }
 }

@@ -37,12 +37,6 @@ public class UsuarioController implements UsuarioApi {
   }
 
   @Override
-  public ResponseEntity<Void> desativarUsuario(UUID id) {
-    usuarioService.desativarUsuario(id);
-    return ResponseEntity.noContent().build();
-  }
-
-  @Override
   public ResponseEntity<List<UsuarioResumoResponse>> listarTodos() {
     List<UsuarioResumoResponse> usuarios = usuarioService.listarTodos();
     return ResponseEntity.ok(usuarios);

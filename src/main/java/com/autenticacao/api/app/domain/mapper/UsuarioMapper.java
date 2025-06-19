@@ -13,10 +13,6 @@ public interface UsuarioMapper {
 
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "autenticacao", ignore = true)
-  @Mapping(target = "dataHoraAtualizacao", ignore = true)
-  @Mapping(target = "dataHoraExclusao", ignore = true)
-  @Mapping(target = "tentativasFalhas", ignore = true)
-  @Mapping(target = "bloqueadoAte", ignore = true)
   Usuario toEntity(CadastroUsuarioRequest request);
 
   @Mapping(

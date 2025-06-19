@@ -1,1 +1,1 @@
-CREATE SCHEMA IF NOT EXISTS autenticacao;
+CREATE SCHEMA autenticacao;

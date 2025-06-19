@@ -1,10 +1,10 @@
 package com.autenticacao.api.app.service.impl;
 
+import static com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider.obterUsuarioLogado;
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
 import static com.autenticacao.api.app.util.enums.MensagemSistema.ERRO_AO_DESATIVAR_AUTENTICACAO_DO_USUARIO;
 import static com.autenticacao.api.app.util.enums.MensagemSistema.USUARIO_JA_POSSUI_AUTENTICACAO;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -12,93 +12,135 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
 import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
 import com.autenticacao.api.app.domain.entity.Autenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
-import com.autenticacao.api.app.exception.*;
+import com.autenticacao.api.app.exception.AutenticacaoJaExistenteException;
+import com.autenticacao.api.app.exception.UsuarioNaoEncontradoException;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
 import com.autenticacao.api.app.service.AutenticacaoCadastroService;
+import com.autenticacao.api.app.service.HistoricoAutenticacaoService;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Implementação do serviço responsável pelo cadastro e desativação da autenticação de usuários, com
- * tratamento centralizado de exceções para garantir robustez e rastreabilidade dos erros.
- */
 @Service
 @RequiredArgsConstructor
 public class AutenticacaoCadastroServiceImpl implements AutenticacaoCadastroService {
 
   private final AutenticacaoRepository autenticacaoRepository;
+  private final HistoricoAutenticacaoService historicoAutenticacaoService;
   private final PasswordEncoder passwordEncoder;
   private static final Logger logger =
       LoggerFactory.getLogger(AutenticacaoCadastroServiceImpl.class);
 
-  /**
-   * Cria uma autenticação para o usuário informado, utilizando tratamento centralizado de exceções.
-   * Caso o usuário já possua autenticação, lança {@link AutenticacaoJaExistenteException}.
-   *
-   * @param dto Dados de cadastro da autenticação, incluindo senha.
-   * @param usuario Usuário ao qual a autenticação será vinculada.
-   * @throws AutenticacaoJaExistenteException caso já exista autenticação para o usuário.
-   * @throws ValidacaoException em caso de erro de validação.
-   * @throws ValidacaoNotFoundException em caso de recurso não encontrado durante validação.
-   * @throws AutenticacaoApiRunTimeException em caso de erro inesperado na criação.
-   */
   @Override
   public void criar(CadastroUsuarioRequest dto, Usuario usuario) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          autenticacaoRepository
-              .findByUsuario(usuario)
-              .ifPresent(
-                  auth -> {
-                    throw new AutenticacaoJaExistenteException(
-                        USUARIO_JA_POSSUI_AUTENTICACAO.getChave());
-                  });
+          validarSeAutenticacaoJaExiste(usuario);
 
-          Autenticacao auth = new Autenticacao();
-          auth.setEmail(usuario.getEmail());
-          auth.setSenha(passwordEncoder.encode(dto.senha()));
-          auth.setUsuario(usuario);
-          auth.setAtivo(true);
-          auth.setDataHoraCriacao(LocalDateTime.now());
-          auth.setDataHoraAtualizacao(LocalDateTime.now());
-          usuario.setAutenticacao(auth);
+          Autenticacao novaAutenticacao = construirNovaAutenticacao(dto, usuario);
 
-          autenticacaoRepository.save(auth);
+          usuario.setAutenticacao(novaAutenticacao);
+          autenticacaoRepository.save(novaAutenticacao);
+
+          historicoAutenticacaoService.registrarHistoricoCompleto(null, novaAutenticacao, usuario);
+
           logger.info("Autenticação criada para usuário: {}", usuario.getEmail());
           return null;
         },
         "Erro ao criar autenticação para o usuário.");
   }
 
-  /**
-   * Desativa a autenticação do usuário identificado pelo ‘ID’ informado, utilizando tratamento
-   * centralizado de exceções. Caso o usuário não seja encontrado, lança {@link
-   * UsuarioNaoEncontradoException}.
-   *
-   * @param usuarioId ‘ID’ do usuário cuja autenticação será desativada.
-   * @throws UsuarioNaoEncontradoException caso não exista autenticação para o usuário.
-   * @throws ValidacaoException em caso de erro de validação.
-   * @throws ValidacaoNotFoundException em caso de recurso não encontrado durante validação.
-   * @throws AutenticacaoApiRunTimeException em caso de erro inesperado na desativação.
-   */
+  @Override
+  public void atualizar(AtualizarUsuarioRequest dto) {
+    executarComandoComTratamentoErroComMensagem(
+        () -> {
+          Usuario usuario = obterUsuarioLogado();
+
+          Autenticacao autenticacaoAntiga = usuario.getAutenticacao();
+          if (autenticacaoAntiga == null) {
+            throw new UsuarioNaoEncontradoException(
+                "Usuário não possui autenticação para atualizar.");
+          }
+
+          Autenticacao autenticacaoAtualizada =
+              construirAutenticacaoAtualizada(dto, autenticacaoAntiga);
+          usuario.setAutenticacao(autenticacaoAtualizada);
+
+          Autenticacao autenticacaoPersistida = autenticacaoRepository.save(autenticacaoAtualizada);
+
+          historicoAutenticacaoService.registrarHistoricoCompleto(
+              autenticacaoAntiga, autenticacaoPersistida, usuario);
+
+          logger.info("Autenticação atualizada para usuário: {}", usuario.getEmail());
+          return null;
+        },
+        "Erro ao atualizar autenticação para o usuário.");
+  }
+
   @Override
   public void desativar(UUID usuarioId) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          Autenticacao auth =
+          Autenticacao authAntes =
               autenticacaoRepository
                   .buscarPorUsuarioId(usuarioId)
                   .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado"));
 
-          auth.setAtivo(false);
-          auth.setDataHoraExclusao(LocalDateTime.now());
-          autenticacaoRepository.save(auth);
+          Autenticacao authDepois = cloneAutenticacaoParaAlteracao(authAntes);
+          authDepois.setAtivo(false);
+
+          autenticacaoRepository.save(authDepois);
+          historicoAutenticacaoService.registrarHistoricoCompleto(
+              authAntes, authDepois, authAntes.getUsuario());
+
           logger.info("Autenticação desativada para usuário ID: {}", usuarioId);
           return null;
         },
         ERRO_AO_DESATIVAR_AUTENTICACAO_DO_USUARIO.getChave());
+  }
+
+  private void validarSeAutenticacaoJaExiste(Usuario usuario) {
+    autenticacaoRepository
+        .findByUsuario(usuario)
+        .ifPresent(
+            auth -> {
+              throw new AutenticacaoJaExistenteException(USUARIO_JA_POSSUI_AUTENTICACAO.getChave());
+            });
+  }
+
+  private Autenticacao construirNovaAutenticacao(CadastroUsuarioRequest dto, Usuario usuario) {
+    Autenticacao auth = new Autenticacao();
+    auth.setEmail(usuario.getEmail());
+    auth.setSenha(passwordEncoder.encode(dto.senha()));
+    auth.setUsuario(usuario);
+    auth.setAtivo(true);
+    return auth;
+  }
+
+  private Autenticacao construirAutenticacaoAtualizada(
+      AtualizarUsuarioRequest dto, Autenticacao atual) {
+    Autenticacao nova = cloneAutenticacaoParaAlteracao(atual);
+
+    if (dto.senha() != null && !dto.senha().isBlank()) {
+      nova.setSenha(passwordEncoder.encode(dto.senha()));
+    }
+    if (dto.email() != null && !dto.email().isBlank()) {
+      nova.setEmail(dto.email());
+    }
+
+    return nova;
+  }
+
+  private Autenticacao cloneAutenticacaoParaAlteracao(Autenticacao original) {
+    Autenticacao clone = new Autenticacao();
+    clone.setId(original.getId());
+    clone.setEmail(original.getEmail());
+    clone.setSenha(original.getSenha());
+    clone.setUsuario(original.getUsuario());
+    clone.setAtivo(original.getAtivo());
+    return clone;
   }
 }

@@ -4,7 +4,6 @@ import static com.autenticacao.api.app.config.security.provider.UsuarioAutentica
 import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTratamentoErroComMensagem;
 import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +24,7 @@ import com.autenticacao.api.app.service.HistoricoUsuarioService;
 import com.autenticacao.api.app.service.UsuarioService;
 import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
 import com.autenticacao.api.app.util.enums.MensagemSistema;
-import com.autenticacao.api.app.util.enums.TipoMovimentacao;
+import com.autenticacao.api.app.util.enums.UserRole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,10 +37,10 @@ import lombok.RequiredArgsConstructor;
 public class UsuarioServiceImpl implements UsuarioService {
 
   private final UsuarioRepository usuarioRepository;
-  private final AutenticacaoCadastroService autenticacaoCadastroService;
   private final UsuarioMapper usuarioMapper;
   private final ValidatorUsuarioUtil validatorUsuarioUtil;
   private final HistoricoUsuarioService historicoUsuarioService;
+  private final AutenticacaoCadastroService autenticacaoCadastroService;
 
   /**
    * Busca um usuário pelo seu ‘ID’.
@@ -76,6 +75,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     validarNovoUsuario(request);
     Usuario usuario = salvarUsuario(usuarioMapper.toEntity(request));
     autenticacaoCadastroService.criar(request, usuario);
+    historicoUsuarioService.registrarHistoricoCompleto(null, usuario);
 
     return usuarioMapper.toResumo(usuario);
   }
@@ -109,37 +109,13 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     Usuario usuarioAtualizado = aplicarAtualizacoesParciais(request, usuario);
 
-    historicoUsuarioService.registrarAlteracaoUsuario(
-        usuarioAtualizado, obterUsuarioLogado(), TipoMovimentacao.ATUALIZACAO_DADOS);
+    autenticacaoCadastroService.atualizar(request);
+
+    historicoUsuarioService.registrarHistoricoCompleto(usuario, usuarioAtualizado);
 
     Usuario salvo = salvarUsuario(usuarioAtualizado);
 
     return usuarioMapper.toDetalhado(salvo);
-  }
-
-  /**
-   * Desativa o usuário identificado pelo 'ID', marcando-o como inativo e registrando histórico.
-   *
-   * @param id Identificador do usuário a desativar.
-   * @throws ValidacaoNotFoundException se usuário não existir.
-   */
-  @Override
-  public void desativarUsuario(UUID id) {
-    executarComandoComTratamentoErroComMensagem(
-        () -> {
-          Usuario usuario = buscarUsuarioPorId(id);
-
-          desativar(usuario);
-
-          salvarUsuario(usuario);
-
-          autenticacaoCadastroService.desativar(usuario.getId());
-
-          registrarHistoricoDesativacao(usuario);
-
-          return null;
-        },
-        ERRO_AO_DESATIVAR_USUARIO.getChave());
   }
 
   /**
@@ -149,9 +125,12 @@ public class UsuarioServiceImpl implements UsuarioService {
    */
   @Override
   public List<UsuarioResumoResponse> listarTodos() {
+    var usuarioLogado = obterUsuarioLogado();
+    if (usuarioLogado == null || !usuarioLogado.getRole().equals(UserRole.ADMIN)) {
+      throw new ValidacaoException(ACESSO_NEGADO);
+    }
     return usuarioRepository.findAll().stream().map(usuarioMapper::toResumo).toList();
   }
-
   /*
    * ====================
    * MÉTODOS PRIVADOS
@@ -190,26 +169,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     Optional.ofNullable(request.dataNascimento()).ifPresent(builder::dataNascimento);
 
     return builder.build();
-  }
-
-  /**
-   * Marca um usuário como inativo, definindo data e hora da exclusão.
-   *
-   * @param usuario Usuário a ser desativado.
-   */
-  private void desativar(Usuario usuario) {
-    usuario.setAtivo(false);
-    usuario.setDataHoraExclusao(LocalDateTime.now());
-  }
-
-  /**
-   * Registra a desativação do usuário no histórico de alterações.
-   *
-   * @param usuario Usuário desativado.
-   */
-  private void registrarHistoricoDesativacao(Usuario usuario) {
-    historicoUsuarioService.registrarAlteracaoUsuario(
-        usuario, obterUsuarioLogado(), TipoMovimentacao.DESATIVACAO);
   }
 
   /**

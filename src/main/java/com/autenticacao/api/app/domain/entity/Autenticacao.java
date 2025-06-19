@@ -4,10 +4,12 @@ import static com.autenticacao.api.app.Constantes.ColunasAutenticacao.*;
 import static com.autenticacao.api.app.Constantes.Schema.AUTENTICACAO;
 import static com.autenticacao.api.app.Constantes.Tabelas.AUTENTICACOES;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,18 +39,10 @@ public class Autenticacao {
   @Column(name = SENHA, nullable = false)
   private String senha;
 
-  @Column(name = DATA_HORA_CRIACAO, nullable = false)
-  private LocalDateTime dataHoraCriacao;
-
-  @Column(name = DATA_HORA_ATUALIZACAO)
-  private LocalDateTime dataHoraAtualizacao;
-
-  @Column(name = SENHA_ATUALIZACAO)
-  private LocalDateTime senhaAtualizacao;
-
-  @Column(name = DATA_HORA_EXCLUSAO)
-  private LocalDateTime dataHoraExclusao;
-
   @Column(name = ATIVO, nullable = false)
   private Boolean ativo;
+
+  @OneToMany(mappedBy = "autenticacao", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+  @JsonManagedReference
+  private List<HistoricoAutenticacao> historicoAutenticacoes = new ArrayList<>();
 }

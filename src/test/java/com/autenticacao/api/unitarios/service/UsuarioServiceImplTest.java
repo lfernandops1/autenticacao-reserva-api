@@ -18,8 +18,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider;
 import com.autenticacao.api.app.domain.DTO.request.AtualizarUsuarioRequest;
 import com.autenticacao.api.app.domain.DTO.request.CadastroUsuarioRequest;
 import com.autenticacao.api.app.domain.DTO.response.UsuarioDetalhadoResponse;
@@ -33,7 +35,7 @@ import com.autenticacao.api.app.service.AutenticacaoCadastroService;
 import com.autenticacao.api.app.service.HistoricoUsuarioService;
 import com.autenticacao.api.app.service.impl.UsuarioServiceImpl;
 import com.autenticacao.api.app.util.ValidatorUsuarioUtil;
-import com.autenticacao.api.app.util.enums.TipoMovimentacao;
+import com.autenticacao.api.app.util.enums.MensagemSistema;
 import com.autenticacao.api.app.util.enums.UserRole;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,8 +66,6 @@ class UsuarioServiceImplTest {
     resumoResponse = obterUsuarioResumoResponse();
   }
 
-  // ======= BUSCAR USUÁRIO POR ID =======
-
   @Test
   @DisplayName("Deve buscar usuário por ID com sucesso")
   void deveBuscarUsuarioPorIdComSucesso() {
@@ -85,8 +85,6 @@ class UsuarioServiceImplTest {
     assertThrows(ValidacaoNotFoundException.class, () -> usuarioService.buscarPorId(usuarioId));
   }
 
-  // ======= CRIAR USUÁRIO =======
-
   @Test
   @DisplayName("Deve criar usuário com sucesso sem registrar histórico")
   void deveCriarUsuarioComSucessoSemRegistrarHistorico() {
@@ -96,11 +94,11 @@ class UsuarioServiceImplTest {
     when(usuarioRepository.save(usuario)).thenReturn(usuario);
     when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
 
-    UsuarioResumoResponse response = usuarioService.criarUsuario(cadastroRequest);
+    var response = usuarioService.criarUsuario(cadastroRequest);
 
     assertThat(response).isEqualTo(resumoResponse);
     verify(autenticacaoCadastroService).criar(cadastroRequest, usuario);
-    verify(historicoUsuarioService, never()).registrarAlteracaoUsuario(any(), any(), any());
+    verify(historicoUsuarioService).registrarHistoricoCompleto(null, usuario);
   }
 
   @Test
@@ -124,8 +122,6 @@ class UsuarioServiceImplTest {
         assertThrows(ValidacaoException.class, () -> usuarioService.criarUsuario(cadastroRequest));
     assertThat(ex.getMessage()).contains(TELEFONE_JA_CADASTRADO.getChave());
   }
-
-  // ======= ATUALIZAR USUÁRIO =======
 
   @Test
   @DisplayName("Deve atualizar usuário e registrar histórico de alteração")
@@ -163,8 +159,7 @@ class UsuarioServiceImplTest {
     assertThat(response).isEqualTo(esperado);
 
     verify(historicoUsuarioService)
-        .registrarAlteracaoUsuario(
-            any(Usuario.class), nullable(Usuario.class), eq(TipoMovimentacao.ATUALIZACAO_DADOS));
+        .registrarHistoricoCompleto(any(Usuario.class), any(Usuario.class));
   }
 
   @Test
@@ -177,51 +172,56 @@ class UsuarioServiceImplTest {
         () -> usuarioService.atualizarUsuario(usuarioId, atualizarRequest));
   }
 
-  // ======= DESATIVAR USUÁRIO =======
-
   @Test
-  @DisplayName("Deve desativar usuário e registrar histórico")
-  void deveDesativarUsuarioERegistrarHistorico() {
-    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-    when(usuarioRepository.save(usuario)).thenReturn(usuario);
-    doNothing().when(autenticacaoCadastroService).desativar(usuarioId);
+  @DisplayName("Deve listar todos os usuários quando usuário logado for ADMIN")
+  void deveListarTodosUsuariosQuandoUsuarioAdmin() {
+    Usuario usuarioLogado = Usuario.builder().role(UserRole.ADMIN).build();
 
-    usuarioService.desativarUsuario(usuarioId);
+    // Mockar obterUsuarioLogado para retornar usuário admin
+    try (var mockedStatic = Mockito.mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuarioLogado);
 
-    assertThat(usuario.isAtivo()).isFalse();
-    assertThat(usuario.getDataHoraExclusao()).isNotNull();
+      List<Usuario> usuarios = List.of(usuario);
+      List<UsuarioResumoResponse> resumos = List.of(resumoResponse);
 
-    verify(autenticacaoCadastroService).desativar(usuarioId);
-    verify(historicoUsuarioService)
-        .registrarAlteracaoUsuario(eq(usuario), any(), eq(TipoMovimentacao.DESATIVACAO));
+      when(usuarioRepository.findAll()).thenReturn(usuarios);
+      when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
+
+      List<UsuarioResumoResponse> resultado = usuarioService.listarTodos();
+
+      assertThat(resultado).isEqualTo(resumos);
+    }
   }
 
   @Test
-  @DisplayName("Deve lançar exceção ao tentar desativar usuário inexistente")
-  void deveLancarExcecaoAoDesativarUsuarioInexistente() {
-    when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.empty());
+  @DisplayName("Deve lançar exceção quando usuário não estiver logado")
+  void deveLancarExcecaoQuandoUsuarioNaoEstiverLogado() {
+    try (var mockedStatic = Mockito.mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(null);
 
-    assertThrows(
-        ValidacaoNotFoundException.class, () -> usuarioService.desativarUsuario(usuarioId));
+      ValidacaoException ex =
+          assertThrows(ValidacaoException.class, () -> usuarioService.listarTodos());
+
+      assertThat(ex.getMessage()).contains(MensagemSistema.ACESSO_NEGADO.getChave());
+    }
   }
-
-  // ======= LISTAR TODOS OS USUÁRIOS =======
 
   @Test
-  @DisplayName("Deve listar todos os usuários")
-  void deveListarTodosUsuarios() {
-    List<Usuario> usuarios = List.of(usuario);
-    List<UsuarioResumoResponse> resumos = List.of(resumoResponse);
+  @DisplayName("Deve lançar exceção quando usuário logado não for ADMIN")
+  void deveLancarExcecaoQuandoUsuarioNaoForAdmin() {
+    Usuario usuarioLogado = Usuario.builder().role(UserRole.USER).build();
 
-    when(usuarioRepository.findAll()).thenReturn(usuarios);
-    when(usuarioMapper.toResumo(usuario)).thenReturn(resumoResponse);
+    try (var mockedStatic = Mockito.mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuarioLogado);
 
-    List<UsuarioResumoResponse> resultado = usuarioService.listarTodos();
+      ValidacaoException ex =
+          assertThrows(ValidacaoException.class, () -> usuarioService.listarTodos());
 
-    assertThat(resultado).isEqualTo(resumos);
+      assertThat(ex.getMessage()).contains(MensagemSistema.ACESSO_NEGADO.getChave());
+    }
   }
 
-  // ======= MÉTODOS AUXILIARES =======
+  // Auxiliares
 
   private Usuario obterUsuario() {
     return Usuario.builder()
@@ -243,7 +243,8 @@ class UsuarioServiceImplTest {
         "joao.atualizado@email.com",
         LocalDate.of(1991, 2, 2),
         LocalDateTime.now(),
-        true);
+        true,
+        "SenhaForte123@");
   }
 
   private CadastroUsuarioRequest obterCadastroUsuarioRequest() {
@@ -255,9 +256,7 @@ class UsuarioServiceImplTest {
         "111222333",
         LocalDate.of(1995, 5, 5),
         true,
-        UserRole.USER,
-        LocalDateTime.now(),
-        LocalDateTime.now());
+        UserRole.USER);
   }
 
   private UsuarioDetalhadoResponse obterUsuarioDetalhadoResponse() {

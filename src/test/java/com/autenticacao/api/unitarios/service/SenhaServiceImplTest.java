@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
@@ -21,11 +23,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.autenticacao.api.app.config.security.provider.UsuarioAutenticadoProvider;
 import com.autenticacao.api.app.domain.entity.Autenticacao;
+import com.autenticacao.api.app.domain.entity.HistoricoAutenticacao;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.exception.AutenticacaoApiRunTimeException;
 import com.autenticacao.api.app.exception.SenhaExpiradaException;
+import com.autenticacao.api.app.exception.ValidacaoException;
 import com.autenticacao.api.app.repository.AutenticacaoRepository;
+import com.autenticacao.api.app.repository.HistoricoAutenticacaoRepository;
 import com.autenticacao.api.app.service.impl.SenhaServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +40,8 @@ class SenhaServiceImplTest {
   @Mock private PasswordEncoder passwordEncoder;
 
   @Mock private AutenticacaoRepository autenticacaoRepository;
+
+  @Mock private HistoricoAutenticacaoRepository historicoAutenticacaoRepository;
 
   @InjectMocks private SenhaServiceImpl service;
 
@@ -49,7 +57,7 @@ class SenhaServiceImplTest {
     usuario.setAutenticacao(autenticacao);
     ReflectionTestUtils.setField(service, "validadeSenhaDias", validadeSenhaDias);
 
-    // mocka o usuário logado no contexto de segurança
+    // mocka o usuário logado no contexto de segurança (caso necessário)
     UsernamePasswordAuthenticationToken authToken =
         new UsernamePasswordAuthenticationToken(usuario, null, List.of());
     SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -57,36 +65,28 @@ class SenhaServiceImplTest {
     SecurityContextHolder.setContext(context);
   }
 
-  // --- TESTES senhaExpirada ---
-
-  @Test
-  @DisplayName("Retorna true quando a senha está expirada (mais antiga que validade)")
-  void deveRetornarTrueQuandoSenhaExpirada() {
-    autenticacao.setDataHoraAtualizacao(LocalDateTime.now().minusDays(validadeSenhaDias + 1));
-    assertTrue(service.senhaExpirada(autenticacao));
-  }
-
-  @Test
-  @DisplayName("Retorna false quando a senha não está expirada (dentro do prazo)")
-  void deveRetornarFalseQuandoSenhaNaoExpirada() {
-    autenticacao.setDataHoraAtualizacao(LocalDateTime.now().minusDays(validadeSenhaDias - 1));
-    assertFalse(service.senhaExpirada(autenticacao));
-  }
-
   // --- TESTES validarSenhaExpirada ---
 
   @Test
   @DisplayName("Valida senha sem lançar exceção quando senha não expirada")
   void deveValidarSenhaSemExcecaoQuandoNaoExpirada() {
-    autenticacao.setDataHoraAtualizacao(LocalDateTime.now().minusDays(validadeSenhaDias - 1));
+    when(historicoAutenticacaoRepository.findTopByUsuarioResponsavelOrderByDataHoraCriacaoDesc(
+            usuario))
+        .thenReturn(
+            Optional.of(
+                criarHistoricoComData(LocalDateTime.now().minusDays(validadeSenhaDias - 1))));
+
     assertDoesNotThrow(() -> service.validarSenhaExpirada(usuario));
   }
 
   @Test
   @DisplayName("Lança SenhaExpiradaException quando senha está expirada")
   void deveLancarExcecaoSenhaExpirada() {
-    autenticacao.setDataHoraAtualizacao(LocalDateTime.now().minusDays(validadeSenhaDias + 1));
-    usuario.setAutenticacao(autenticacao);
+    when(historicoAutenticacaoRepository.findTopByUsuarioResponsavelOrderByDataHoraCriacaoDesc(
+            usuario))
+        .thenReturn(
+            Optional.of(
+                criarHistoricoComData(LocalDateTime.now().minusDays(validadeSenhaDias + 1))));
 
     SenhaExpiradaException ex =
         assertThrows(SenhaExpiradaException.class, () -> service.validarSenhaExpirada(usuario));
@@ -96,7 +96,9 @@ class SenhaServiceImplTest {
   @Test
   @DisplayName("Lança AutenticacaoApiRunTimeException quando ocorre erro inesperado na validação")
   void deveLancarExcecaoGenericaSeErroNoMetodo() {
-    usuario.setAutenticacao(null); // força NullPointerException no método
+    when(historicoAutenticacaoRepository.findTopByUsuarioResponsavelOrderByDataHoraCriacaoDesc(
+            usuario))
+        .thenThrow(new RuntimeException("Erro inesperado"));
 
     AutenticacaoApiRunTimeException ex =
         assertThrows(
@@ -113,14 +115,49 @@ class SenhaServiceImplTest {
     String novaSenha = "novaSenha123";
     String senhaCodificada = "senhaCodificada";
 
+    usuario.setAutenticacao(autenticacao);
+    autenticacao.setSenha("senhaCodificadaAntiga");
+
+    when(passwordEncoder.matches(senhaAntiga, autenticacao.getSenha())).thenReturn(true);
     when(passwordEncoder.encode(novaSenha)).thenReturn(senhaCodificada);
     when(autenticacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-    assertDoesNotThrow(() -> service.alterarSenha(senhaAntiga, novaSenha));
+    // Mocka método estático obterUsuarioLogado para retornar o usuário criado
+    try (MockedStatic<UsuarioAutenticadoProvider> mockedStatic =
+        mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuario);
 
-    assertEquals(senhaCodificada, autenticacao.getSenha());
-    assertNotNull(autenticacao.getDataHoraAtualizacao());
-    verify(autenticacaoRepository).save(autenticacao);
+      assertDoesNotThrow(() -> service.alterarSenha(senhaAntiga, novaSenha));
+
+      assertEquals(senhaCodificada, autenticacao.getSenha());
+      verify(autenticacaoRepository).save(autenticacao);
+      verify(historicoAutenticacaoRepository).save(any(HistoricoAutenticacao.class));
+    }
+  }
+
+  @Test
+  @DisplayName("Lança ValidacaoException quando senha atual está incorreta")
+  void deveLancarValidacaoExceptionSeSenhaAtualIncorreta() {
+    String senhaAntiga = "senhaAntigaErrada";
+    String novaSenha = "novaSenha123";
+
+    usuario.setAutenticacao(autenticacao);
+    autenticacao.setSenha("senhaCodificadaAntiga");
+
+    when(passwordEncoder.matches(senhaAntiga, autenticacao.getSenha())).thenReturn(false);
+
+    try (MockedStatic<UsuarioAutenticadoProvider> mockedStatic =
+        mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuario);
+
+      ValidacaoException ex =
+          assertThrows(
+              ValidacaoException.class, () -> service.alterarSenha(senhaAntiga, novaSenha));
+      assertEquals(SENHA_ATUAL_INCORRETA.getChave(), ex.getMessage());
+
+      verify(autenticacaoRepository, never()).save(any());
+      verify(historicoAutenticacaoRepository, never()).save(any());
+    }
   }
 
   @Test
@@ -129,13 +166,28 @@ class SenhaServiceImplTest {
     String senhaAntiga = "senhaAntiga123";
     String novaSenha = "novaSenha123";
 
+    usuario.setAutenticacao(autenticacao);
+    autenticacao.setSenha("senhaCodificadaAntiga");
+
+    when(passwordEncoder.matches(senhaAntiga, autenticacao.getSenha())).thenReturn(true);
     when(passwordEncoder.encode(novaSenha)).thenReturn("codificada");
     doThrow(new RuntimeException("Erro banco")).when(autenticacaoRepository).save(any());
 
-    AutenticacaoApiRunTimeException ex =
-        assertThrows(
-            AutenticacaoApiRunTimeException.class,
-            () -> service.alterarSenha(senhaAntiga, novaSenha));
-    assertTrue(ex.getMessage().contains(ERRO_ALTERAR_SENHA.getChave()));
+    try (MockedStatic<UsuarioAutenticadoProvider> mockedStatic =
+        mockStatic(UsuarioAutenticadoProvider.class)) {
+      mockedStatic.when(UsuarioAutenticadoProvider::obterUsuarioLogado).thenReturn(usuario);
+
+      AutenticacaoApiRunTimeException ex =
+          assertThrows(
+              AutenticacaoApiRunTimeException.class,
+              () -> service.alterarSenha(senhaAntiga, novaSenha));
+      assertTrue(ex.getMessage().contains(ERRO_ALTERAR_SENHA.getChave()));
+    }
+  }
+
+  // --- Método auxiliar para criar HistoricoAutenticacao com data ---
+
+  private HistoricoAutenticacao criarHistoricoComData(LocalDateTime data) {
+    return HistoricoAutenticacao.builder().dataAlteracao(data).build();
   }
 }

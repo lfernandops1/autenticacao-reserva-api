@@ -1,10 +1,8 @@
 package com.autenticacao.api.app.endpoint.api;
 
 import static com.autenticacao.api.app.Constantes.Rotas.*;
-import static com.autenticacao.api.app.config.security.util.Roles.ADMIN_OR_SELF;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.autenticacao.api.app.domain.DTO.request.AlterarSenhaRequest;
@@ -41,7 +39,6 @@ public interface AutenticacaoApi {
     @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso"),
     @ApiResponse(responseCode = "401", description = "Usuário não autorizado")
   })
-  @PreAuthorize(ADMIN_OR_SELF)
   @PutMapping(ALTERAR_SENHA)
   ResponseEntity<Void> alterarSenha(@RequestBody @Valid AlterarSenhaRequest alterarSenhaRequest);
 

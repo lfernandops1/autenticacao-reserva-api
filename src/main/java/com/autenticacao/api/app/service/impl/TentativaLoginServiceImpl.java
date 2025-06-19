@@ -4,22 +4,19 @@ import static com.autenticacao.api.app.util.ExecutarUtil.executarComandoComTrata
 import static com.autenticacao.api.app.util.enums.MensagemSistema.*;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.autenticacao.api.app.domain.entity.ControleAcessoUsuario;
 import com.autenticacao.api.app.domain.entity.Usuario;
 import com.autenticacao.api.app.exception.ContaBloqueadaException;
-import com.autenticacao.api.app.repository.UsuarioRepository;
+import com.autenticacao.api.app.repository.ControleAcessoUsuarioRepository;
 import com.autenticacao.api.app.service.TentativaLoginService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Serviço responsável por controle de tentativas de login e bloqueios de segurança.
- *
- * <p>Define políticas como limite de tentativas falhas e bloqueio temporário de conta.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -28,7 +25,7 @@ public class TentativaLoginServiceImpl implements TentativaLoginService {
   private static final int MAX_TENTATIVAS = 5;
   private static final int TEMPO_BLOQUEIO_MIN = 15;
 
-  private final UsuarioRepository usuarioRepository;
+  private final ControleAcessoUsuarioRepository controleAcessoUsuarioRepository;
 
   /**
    * Valida se a conta do usuário está bloqueada.
@@ -36,11 +33,14 @@ public class TentativaLoginServiceImpl implements TentativaLoginService {
    * @param usuario Usuário a ser verificado
    * @throws ContaBloqueadaException se a conta estiver com bloqueio ativo
    */
+  @Override
   public void validarBloqueio(Usuario usuario) {
-    if (usuario.getBloqueadoAte() != null
-        && usuario.getBloqueadoAte().isAfter(LocalDateTime.now())) {
+    ControleAcessoUsuario controle = buscarOuCriarControle(usuario);
+
+    if (controle.getBloqueadoAte() != null
+        && controle.getBloqueadoAte().isAfter(LocalDateTime.now())) {
       throw new ContaBloqueadaException(
-          CONTA_BLOQUEADA.getChave() + " até " + usuario.getBloqueadoAte());
+          CONTA_BLOQUEADA.getChave() + " até " + controle.getBloqueadoAte());
     }
   }
 
@@ -49,17 +49,20 @@ public class TentativaLoginServiceImpl implements TentativaLoginService {
    *
    * @param usuario Usuário a ser atualizado
    */
+  @Override
   public void registrarFalha(Usuario usuario) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          int tentativas = usuario.getTentativasFalhas() + 1;
-          usuario.setTentativasFalhas(tentativas);
+          ControleAcessoUsuario controle = buscarOuCriarControle(usuario);
+
+          int tentativas = controle.getTentativasFalhas() + 1;
+          controle.setTentativasFalhas(tentativas);
 
           if (tentativas >= MAX_TENTATIVAS) {
-            usuario.setBloqueadoAte(LocalDateTime.now().plusMinutes(TEMPO_BLOQUEIO_MIN));
+            controle.setBloqueadoAte(LocalDateTime.now().plusMinutes(TEMPO_BLOQUEIO_MIN));
           }
 
-          usuarioRepository.save(usuario);
+          controleAcessoUsuarioRepository.save(controle);
           return null;
         },
         ERRO_REGISTRAR_TENTATIVA_LOGIN.getChave());
@@ -70,14 +73,34 @@ public class TentativaLoginServiceImpl implements TentativaLoginService {
    *
    * @param usuario Usuário a ser atualizado
    */
+  @Override
   public void resetarTentativas(Usuario usuario) {
     executarComandoComTratamentoErroComMensagem(
         () -> {
-          usuario.setTentativasFalhas(0);
-          usuario.setBloqueadoAte(null);
-          usuarioRepository.save(usuario);
+          ControleAcessoUsuario controle = buscarOuCriarControle(usuario);
+
+          controle.setTentativasFalhas(0);
+          controle.setBloqueadoAte(null);
+
+          controleAcessoUsuarioRepository.save(controle);
           return null;
         },
         ERRO_RESETAR_TENTATIVAS_LOGIN.getChave());
+  }
+
+  /** Busca o ControleAcessoUsuario associado ao usuário ou cria um novo se não existir. */
+  private ControleAcessoUsuario buscarOuCriarControle(Usuario usuario) {
+    Optional<ControleAcessoUsuario> controleOpt =
+        controleAcessoUsuarioRepository.findByUsuario(usuario);
+
+    if (controleOpt.isPresent()) {
+      return controleOpt.get();
+    } else {
+      ControleAcessoUsuario novoControle = new ControleAcessoUsuario();
+      novoControle.setUsuario(usuario);
+      novoControle.setTentativasFalhas(0);
+      novoControle.setBloqueadoAte(null);
+      return controleAcessoUsuarioRepository.save(novoControle);
+    }
   }
 }

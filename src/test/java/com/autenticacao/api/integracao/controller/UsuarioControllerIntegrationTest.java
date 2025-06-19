@@ -1,7 +1,7 @@
 package com.autenticacao.api.integracao.controller;
 
 import static com.autenticacao.api.app.Constantes.Rotas.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,9 +34,7 @@ class UsuarioControllerIntegrationTest extends BaseTest {
         "82993834503",
         LocalDate.of(1990, 6, 15),
         true,
-        UserRole.USER,
-        LocalDateTime.now(),
-        LocalDateTime.now());
+        UserRole.USER);
   }
 
   private CadastroUsuarioRequest criarCadastroUsuarioRequestAdmin() {
@@ -48,9 +46,7 @@ class UsuarioControllerIntegrationTest extends BaseTest {
         "82993834505",
         LocalDate.of(1990, 6, 15),
         true,
-        UserRole.ADMIN,
-        LocalDateTime.now(),
-        LocalDateTime.now());
+        UserRole.ADMIN);
   }
 
   private AtualizarUsuarioRequest criarAtualizarUsuarioRequest() {
@@ -61,7 +57,8 @@ class UsuarioControllerIntegrationTest extends BaseTest {
         "joao.silvaatualizado@email.com",
         LocalDate.of(1990, 6, 15),
         LocalDateTime.now(),
-        false);
+        false,
+        "SenhaForte123@");
   }
 
   @Test
